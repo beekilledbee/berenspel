@@ -13,27 +13,13 @@ from spawning import SpawnDirector
 from background import draw_background
 from settings import (
     AMMO_REWARD,
-    BLACK,
-    BEAR_SPAWN_INTERVAL,
-    FIELD_COLOR,
-    FIELD_DARK,
     FPS,
-    GIRL_SPAWN_INTERVAL,
     GOAL_SAVED_GIRLS,
-    HORIZON_Y,
-    LANE_COLOR,
-    MAX_VISIBLE_AMMO,
-    PANEL_COLOR,
-    PLAYER_Y,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     SHOT_COOLDOWN,
-    SKY_COLOR,
     START_AMMO,
-    TEXT_COLOR,
     TITLE,
-    WHITE,
-    YELLOW,
 )
 
 
