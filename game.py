@@ -9,6 +9,8 @@ import pygame
 from effects import BloodEffect
 from entities import BearEnemy, Girl, Lane, PlayerGun
 from ui import draw_overlay, draw_ui
+from spawning import SpawnDirector
+from background import draw_background
 from settings import (
     AMMO_REWARD,
     BLACK,
@@ -37,36 +39,6 @@ from settings import (
 
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
-
-
-class SpawnDirector:
-    def __init__(self, lanes: List[Lane]):
-        self.lanes = lanes
-        self.girl_timer = 0.6
-        self.bear_timer = 1.0
-
-    def update(self, dt: float):
-        spawn_girl = False
-        spawn_bear = False
-
-        self.girl_timer -= dt
-        self.bear_timer -= dt
-
-        if self.girl_timer <= 0:
-            spawn_girl = True
-            self.girl_timer = random.uniform(
-                GIRL_SPAWN_INTERVAL - 0.4,
-                GIRL_SPAWN_INTERVAL + 0.5,
-            )
-
-        if self.bear_timer <= 0:
-            spawn_bear = True
-            self.bear_timer = random.uniform(
-                BEAR_SPAWN_INTERVAL - 0.2,
-                BEAR_SPAWN_INTERVAL + 0.3,
-            )
-
-        return spawn_girl, spawn_bear
 
 
 class Game:
@@ -236,24 +208,8 @@ class Game:
         self.update_spawns(dt)
         self.update_entities(dt)
 
-    def draw_background(self) -> None:
-        self.game_surface.fill(SKY_COLOR)
-        pygame.draw.rect(self.game_surface, FIELD_COLOR, (0, HORIZON_Y, SCREEN_WIDTH, SCREEN_HEIGHT - HORIZON_Y))
-        pygame.draw.rect(self.game_surface, FIELD_DARK, (0, PLAYER_Y + 30, SCREEN_WIDTH, SCREEN_HEIGHT - PLAYER_Y - 30))
-
-        for lane in self.lanes:
-            pygame.draw.line(
-                self.game_surface,
-                LANE_COLOR,
-                (int(lane.horizon_x), HORIZON_Y),
-                (int(lane.end_x), PLAYER_Y),
-                2,
-            )
-
-        pygame.draw.line(self.game_surface, WHITE, (0, HORIZON_Y), (SCREEN_WIDTH, HORIZON_Y), 2)
-
     def draw(self) -> None:
-        self.draw_background()
+        draw_background(self.game_surface, self.lanes)
 
         drawables = []
         for girl in self.girls:
