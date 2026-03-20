@@ -1,4 +1,3 @@
-from cmath import rect
 import math
 import random
 import sys
@@ -21,11 +20,6 @@ from settings import (
     START_AMMO,
     TITLE,
 )
-
-
-def clamp(value: float, low: float, high: float) -> float:
-    return max(low, min(high, value))
-
 
 class Game:
     def __init__(self):
@@ -194,17 +188,16 @@ class Game:
         self.update_spawns(dt)
         self.update_entities(dt)
 
+    def get_sorted_drawables(self):
+        drawables = [(girl.progress, 0, girl) for girl in self.girls]
+        drawables += [(bear.progress, 1, bear) for bear in self.bears]
+        drawables.sort(key=lambda item: item[0])
+        return drawables
+
     def draw(self) -> None:
         draw_background(self.game_surface, self.lanes)
 
-        drawables = []
-        for girl in self.girls:
-            drawables.append((girl.progress, 0, girl))
-        for bear in self.bears:
-            drawables.append((bear.progress, 1, bear))
-        drawables.sort(key=lambda item: item[0])
-
-        for _, _, obj in drawables:
+        for _, _, obj in self.get_sorted_drawables():
             obj.draw(self.game_surface)
 
         for effect in self.effects:
