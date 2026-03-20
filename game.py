@@ -6,13 +6,15 @@ from typing import List
 import pygame
 
 from effects import BloodEffect
-from entities import Bear, Girl, Lane, PlayerGun, SpawnDirector, clamp
+from entities import BearEnemy, Girl, Lane, PlayerGun
 from settings import (
     AMMO_REWARD,
     BLACK,
+    BEAR_SPAWN_INTERVAL,
     FIELD_COLOR,
     FIELD_DARK,
     FPS,
+    GIRL_SPAWN_INTERVAL,
     GOAL_SAVED_GIRLS,
     HORIZON_Y,
     LANE_COLOR,
@@ -29,6 +31,40 @@ from settings import (
     WHITE,
     YELLOW,
 )
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+class SpawnDirector:
+    def __init__(self, lanes: List[Lane]):
+        self.lanes = lanes
+        self.girl_timer = 0.6
+        self.bear_timer = 1.0
+
+    def update(self, dt: float):
+        spawn_girl = False
+        spawn_bear = False
+
+        self.girl_timer -= dt
+        self.bear_timer -= dt
+
+        if self.girl_timer <= 0:
+            spawn_girl = True
+            self.girl_timer = random.uniform(
+                GIRL_SPAWN_INTERVAL - 0.4,
+                GIRL_SPAWN_INTERVAL + 0.5,
+            )
+
+        if self.bear_timer <= 0:
+            spawn_bear = True
+            self.bear_timer = random.uniform(
+                BEAR_SPAWN_INTERVAL - 0.2,
+                BEAR_SPAWN_INTERVAL + 0.3,
+            )
+
+        return spawn_girl, spawn_bear
 
 
 class Game:
@@ -50,7 +86,7 @@ class Game:
         self.spawner = SpawnDirector(self.lanes)
 
         self.girls: List[Girl] = []
-        self.bears: List[Bear] = []
+        self.bears: List[BearEnemy] = []
         self.effects: List[BloodEffect] = []
 
         self.saved_girls = 0
@@ -75,9 +111,9 @@ class Game:
     def spawn_bear(self) -> None:
         lane = random.choice(self.lanes)
         speed = random.uniform(0.18, 0.24)
-        self.bears.append(Bear(lane, speed))
+        self.bears.append(BearEnemy(lane, speed))
 
-    def ray_hits_bear(self, bear: Bear) -> bool:
+    def ray_hits_bear(self, bear: BearEnemy) -> bool:
         origin_x, origin_y = self.gun.x, self.gun.y
         bear_x, bear_y, size = bear.get_draw_data()
 
@@ -218,6 +254,7 @@ class Game:
         bar_rect = pygame.Rect(28, 128, 280, 18)
         pygame.draw.rect(self.screen, BLACK, bar_rect)
         pygame.draw.rect(self.screen, WHITE, bar_rect, 2)
+
         fill = int(bar_rect.width * clamp(self.ammo / MAX_VISIBLE_AMMO, 0.0, 1.0))
         if fill > 0:
             pygame.draw.rect(self.screen, YELLOW, (bar_rect.x, bar_rect.y, fill, bar_rect.height))
