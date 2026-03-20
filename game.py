@@ -65,9 +65,13 @@ class Game:
         self.victory = False
 
     def create_lanes(self) -> List[Lane]:
-        horizon_positions = [245, 420, 640, 860, 1035]
-        end_positions = [165, 390, 640, 890, 1115]
-        return [Lane(i, hx, ex) for i, (hx, ex) in enumerate(zip(horizon_positions, end_positions))]
+        horizon_offsets = [-360, -180, 0, 180, 360]
+        end_offsets = [-500, -250, 0, 250, 500]
+
+        return [
+            Lane(i, SCREEN_WIDTH // 2 + h_off, SCREEN_WIDTH // 2 + e_off)
+            for i, (h_off, e_off) in enumerate(zip(horizon_offsets, end_offsets))
+        ]
 
     def spawn_girl(self) -> None:
         lane = random.choice(self.lanes)
