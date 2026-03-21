@@ -57,11 +57,11 @@ def draw_overlay(surface: pygame.Surface, game) -> None:
     surface.blit(overlay, (0, 0))
 
     if game.victory:
-        title = game.big_font.render("YOU SAVED 20 GIRLS", True, WHITE)
+        title = game.big_font.render(f"YOU SAVED {game.saved_boats}/{GOAL_SAVED_GIRLS} BOATS", True, WHITE)
         subtitle = game.font.render("Press R to play again or ESC to quit", True, WHITE)
     else:
         title = game.big_font.render("GAME OVER", True, WHITE)
-        subtitle = game.font.render("A bear reached the player. Press R to retry.", True, WHITE)
+        subtitle = game.font.render("A sea monster reached the lighthouse. Press R to retry.", True, WHITE)
 
     surface.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 30)))
     surface.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 28)))
