@@ -81,7 +81,15 @@ class Game:
     def spawn_bear(self) -> None:
         lane = random.choice(self.lanes)
         speed = random.uniform(0.18, 0.24)
-        self.bears.append(BearEnemy(lane, speed))
+        bear = BearEnemy(lane, speed)
+
+        
+        candidates = [g for g in self.girls if g.lane == lane and not g.saved and not g.captured]
+        if candidates:
+            target = max(candidates, key=lambda g: g.progress)
+            bear.target_girl = target
+
+        self.bears.append(bear)
 
     def ray_hits_bear(self, bear: BearEnemy) -> bool:
         origin_x, origin_y = self.gun.x, self.gun.y

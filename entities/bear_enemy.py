@@ -1,17 +1,31 @@
-from typing import Tuple
+from typing import Tuple, Optional, TYPE_CHECKING
+import random
 
 import pygame
 
 from entities.enemy import Enemy
 from settings import BEAR_COLOR, BEAR_DAMAGED_COLOR, BLACK, RED
 
+if TYPE_CHECKING:
+    from entities.girl import Girl
+
 
 class BearEnemy(Enemy):
     def __init__(self, lane, speed: float):
         super().__init__(lane, speed, hp=2)
+        self.lateral_offset = random.uniform(-60.0, 60.0)
+        self.target_girl: Optional["Girl"] = None
 
     def get_draw_data(self) -> Tuple[float, float, int]:
-        x, y = self.lane.position(self.progress)
+        base_x, y = self.lane.position(self.progress)
+
+        if self.target_girl is not None and not self.target_girl.saved:
+            target_x, _ = self.target_girl.lane.position(self.target_girl.progress)
+            x = base_x + (target_x - base_x) * self.progress
+            x += self.lateral_offset * (1.0 - self.progress) * 0.5
+        else:
+            x = base_x + self.lateral_offset * (1.0 - self.progress)
+
         scale = 0.34 + self.progress * 1.12
         size = max(14, int(28 * scale))
         return x, y, size
