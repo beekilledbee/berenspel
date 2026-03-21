@@ -29,7 +29,7 @@ def draw_ui(surface: pygame.Surface, game) -> None:
     draw_ui_panel(surface, panel_rect)
 
     ammo_text = game.font.render(f"Ammo: {game.ammo}", True, TEXT_COLOR)
-    saved_text = game.font.render(f"Saved: {game.saved_girls}/{GOAL_SAVED_GIRLS}", True, TEXT_COLOR)
+    saved_text = game.font.render(f"Saved: {game.saved_boats}/{GOAL_SAVED_GIRLS}", True, TEXT_COLOR)
     score_text = game.font.render(f"Score: {game.score}", True, TEXT_COLOR)
 
     surface.blit(ammo_text, (28, 26))

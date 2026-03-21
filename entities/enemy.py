@@ -15,7 +15,7 @@ class Enemy:
         self.remove = False
         self.death_timer = 0.0
         self.grabbing = False
-        self.target_girl: Optional[object] = None
+        self.target_boat: Optional[object] = None
 
     def update(self, dt: float) -> None:
         if self.dead:
@@ -31,7 +31,7 @@ class Enemy:
             self.dead = True
             self.death_timer = BEAR_FLASH_DURATION
             self.grabbing = False
-            self.target_girl = None
+            self.target_boat = None
 
     def should_flash_draw(self) -> bool:
         if not self.dead:

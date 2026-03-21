@@ -1,5 +1,6 @@
+from .boat import Boat
+from .sea_monster import SeaMonster
 from .lane import Lane
-from .girl import Girl
 from .player_gun import PlayerGun
-from .enemy import Enemy
-from .bear_enemy import BearEnemy
+
+__all__ = ["Boat", "SeaMonster", "FastEnemy", "Lane", "PlayerGun"]

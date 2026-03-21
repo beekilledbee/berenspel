@@ -5,24 +5,24 @@ import pygame
 from settings import GIRL_COLOR, RED, SKIN_COLOR
 
 if TYPE_CHECKING:
-    from entities.bear_enemy import BearEnemy
+    from entities.sea_monster import SeaMonster
     from entities.lane import Lane
 
 
-class Girl:
+class Boat:
     def __init__(self, lane: "Lane", speed: float):
         self.lane = lane
         self.speed = speed
         self.progress = 0.0
         self.saved = False
         self.captured = False
-        self.capture_bear: Optional["BearEnemy"] = None
+        self.capture_monster: Optional["SeaMonster"] = None
 
     def update(self, dt: float) -> None:
         if self.saved:
             return
-        if self.captured and self.capture_bear is not None:
-            self.progress = self.capture_bear.progress
+        if self.captured and self.capture_monster is not None:
+            self.progress = self.capture_monster.progress
             return
         self.progress += self.speed * dt
         if self.progress >= 1.0:

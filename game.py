@@ -6,7 +6,7 @@ from typing import List
 import pygame
 
 from effects import BloodEffect
-from entities import BearEnemy, Girl, Lane, PlayerGun
+from entities import SeaMonster, Boat, Lane, PlayerGun
 from ui import draw_overlay, draw_ui
 from spawning import SpawnDirector
 from background import draw_background
@@ -51,11 +51,11 @@ class Game:
         self.gun = PlayerGun()
         self.spawner = SpawnDirector(self.lanes)
 
-        self.girls: List[Girl] = []
-        self.bears: List[BearEnemy] = []
+        self.boats: List[Boat] = []
+        self.monsters: List[SeaMonster] = []
         self.effects: List[BloodEffect] = []
 
-        self.saved_girls = 0
+        self.saved_boats = 0
         self.score = 0
         self.ammo = START_AMMO
         self.trigger_held = False
@@ -73,25 +73,24 @@ class Game:
             for i, (h_off, e_off) in enumerate(zip(horizon_offsets, end_offsets))
         ]
 
-    def spawn_girl(self) -> None:
+    def spawn_boat(self) -> None:
         lane = random.choice(self.lanes)
         speed = random.uniform(0.12, 0.16)
-        self.girls.append(Girl(lane, speed))
+        self.boats.append(Boat(lane, speed))
 
-    def spawn_bear(self) -> None:
+    def spawn_monster(self) -> None:
         lane = random.choice(self.lanes)
         speed = random.uniform(0.18, 0.24)
-        bear = BearEnemy(lane, speed)
+        monster = SeaMonster(lane, speed)
 
-        
-        candidates = [g for g in self.girls if g.lane == lane and not g.saved and not g.captured]
+        candidates = [b for b in self.boats if b.lane == lane and not b.saved and not b.captured]
         if candidates:
             target = max(candidates, key=lambda g: g.progress)
-            bear.target_girl = target
+            monster.target_boat = target
 
-        self.bears.append(bear)
+        self.monsters.append(monster)
 
-    def ray_hits_bear(self, bear: BearEnemy) -> bool:
+    def ray_hits_bear(self, bear: SeaMonster) -> bool:
         origin_x, origin_y = self.gun.x, self.gun.y
         bear_x, bear_y, size = bear.get_draw_data()
 
@@ -118,14 +117,14 @@ class Game:
         self.ammo -= 1
         self.gun.shoot()
 
-        for bear in self.bears:
-            if bear.dead:
+        for monster in self.monsters:
+            if monster.dead:
                 continue
-            if self.ray_hits_bear(bear):
-                x, y, _ = bear.get_draw_data()
+            if self.ray_hits_bear(monster):
+                x, y, _ = monster.get_draw_data()
                 self.effects.append(BloodEffect(x, y))
-                bear.hit()
-                if bear.dead:
+                monster.hit()
+                if monster.dead:
                     self.score += 100
         return True
 
@@ -142,49 +141,49 @@ class Game:
     def update_spawns(self, dt: float) -> None:
         spawn_girl, spawn_bear = self.spawner.update(dt)
         if spawn_girl:
-            self.spawn_girl()
+            self.spawn_boat()
         if spawn_bear:
-            self.spawn_bear()
+            self.spawn_monster()
 
     def update_entities(self, dt: float) -> None:
-        for girl in self.girls:
-            girl.update(dt)
-        for bear in self.bears:
-            bear.update(dt)
+        for boat in self.boats:
+            boat.update(dt)
+        for monster in self.monsters:
+            monster.update(dt)
 
-        for bear in self.bears:
-            if bear.dead or bear.grabbing:
+        for monster in self.monsters:
+            if monster.dead or monster.grabbing:
                 continue
-            for girl in self.girls:
-                if girl.saved or girl.captured:
+            for boat in self.boats:
+                if boat.saved or boat.captured:
                     continue
-                if bear.lane.index != girl.lane.index:
+                if monster.lane.index != boat.lane.index:
                     continue
-                if bear.progress >= girl.progress:
-                    bear.grabbing = True
-                    bear.target_girl = girl
-                    girl.captured = True
-                    girl.capture_bear = bear
+                if monster.progress >= boat.progress:
+                    monster.grabbing = True
+                    monster.target_boat = boat
+                    boat.captured = True
+                    boat.capture_monster = monster
                     break
 
-        remaining_girls: List[Girl] = []
-        for girl in self.girls:
-            if girl.saved:
-                self.saved_girls += 1
+        remaining_boats: List[Boat] = []
+        for boat in self.boats:
+            if boat.saved:
+                self.saved_boats += 1
                 self.score += 50
                 self.ammo += AMMO_REWARD
                 continue
-            if girl.captured and girl.capture_bear and girl.capture_bear.dead:
+            if boat.captured and boat.capture_monster and boat.capture_monster.dead:
                 continue
-            remaining_girls.append(girl)
-        self.girls = remaining_girls
+            remaining_boats.append(boat)
+        self.boats = remaining_boats
 
-        self.bears = [bear for bear in self.bears if (not bear.remove) and bear.progress <= 1.08]
+        self.monsters = [m for m in self.monsters if (not m.remove) and m.progress <= 1.08]
         self.effects = [effect for effect in self.effects if effect.update(dt)]
 
-        if any((not bear.dead) and bear.progress >= 1.0 for bear in self.bears):
+        if any((not m.dead) and m.progress >= 1.0 for m in self.monsters):
             self.game_over = True
-        if self.saved_girls >= GOAL_SAVED_GIRLS:
+        if self.saved_boats >= GOAL_SAVED_GIRLS:
             self.victory = True
 
     def update(self, dt: float) -> None:
@@ -201,8 +200,8 @@ class Game:
         self.update_entities(dt)
 
     def get_sorted_drawables(self):
-        drawables = [(girl.progress, 0, girl) for girl in self.girls]
-        drawables += [(bear.progress, 1, bear) for bear in self.bears]
+        drawables = [(boat.progress, 0, boat) for boat in self.boats]
+        drawables += [(monster.progress, 1, monster) for monster in self.monsters]
         drawables.sort(key=lambda item: item[0])
         return drawables
 
