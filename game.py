@@ -10,6 +10,7 @@ from entities import SeaMonster, Boat, Lane, PlayerGun
 from ui import draw_overlay, draw_ui
 from spawning import SpawnDirector
 from background import draw_background
+from tilemap import TileMap
 from settings import (
     AMMO_REWARD,
     FPS,
@@ -35,6 +36,7 @@ class Game:
         )
 
         self.game_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.tilemap = TileMap("assets/map.tmx")
         pygame.display.set_caption(TITLE)
 
 
@@ -206,7 +208,8 @@ class Game:
         return drawables
 
     def draw(self) -> None:
-        draw_background(self.game_surface, self.lanes)
+        self.game_surface.fill((0, 0, 0))
+        self.tilemap.draw(self.game_surface)
 
         for _, _, obj in self.get_sorted_drawables():
             obj.draw(self.game_surface)
