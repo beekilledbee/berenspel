@@ -2,6 +2,7 @@ import math
 import random
 import sys
 import json
+import datetime
 from pathlib import Path
 from typing import List
 
@@ -105,16 +106,19 @@ class Game:
             time_to_finish = item.get("time_to_finish")
             enemies_killed = item.get("enemies_killed")
             result = item.get("result", "Victory")
+            date = item.get("date")
             if (
                 isinstance(time_to_finish, str)
                 and isinstance(enemies_killed, int)
                 and isinstance(result, str)
+                and isinstance(date, str )
             ):
                 entries.append(
                     {
                         "time_to_finish": time_to_finish,
                         "enemies_killed": enemies_killed,
                         "result": result,
+                        "date": date
                     }
                 )
         return entries
@@ -133,6 +137,7 @@ class Game:
                 "time_to_finish": format_elapsed_time(self.run_time),
                 "enemies_killed": self.enemies_killed,
                 "result": result,
+                "date": str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
             },
         )
         self.save_scoreboard()
