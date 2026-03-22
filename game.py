@@ -104,11 +104,17 @@ class Game:
                 continue
             time_to_finish = item.get("time_to_finish")
             enemies_killed = item.get("enemies_killed")
-            if isinstance(time_to_finish, str) and isinstance(enemies_killed, int):
+            result = item.get("result", "Victory")
+            if (
+                isinstance(time_to_finish, str)
+                and isinstance(enemies_killed, int)
+                and isinstance(result, str)
+            ):
                 entries.append(
                     {
                         "time_to_finish": time_to_finish,
                         "enemies_killed": enemies_killed,
+                        "result": result,
                     }
                 )
         return entries
@@ -117,7 +123,7 @@ class Game:
         with self.scoreboard_path.open("w", encoding="utf-8") as scoreboard_file:
             json.dump(self.scoreboard_entries[:20], scoreboard_file, indent=2)
 
-    def record_result(self) -> None:
+    def record_result(self, result: str) -> None:
         if self.result_recorded:
             return
 
@@ -126,6 +132,7 @@ class Game:
             {
                 "time_to_finish": format_elapsed_time(self.run_time),
                 "enemies_killed": self.enemies_killed,
+                "result": result,
             },
         )
         self.save_scoreboard()
@@ -296,6 +303,7 @@ class Game:
 
             if self.tilemap.is_land_at_pixel(x, foot_y):
                 self.game_over = True
+                self.record_result("Failed")
                 return
 
         for monster in self.monsters:
@@ -326,7 +334,7 @@ class Game:
 
         if self.saved_boats >= GOAL_SAVED_GIRLS:
             self.victory = True
-            self.record_result()
+            self.record_result("Victory")
 
     def update(self, dt: float) -> None:
         if self.screen_state != "game":

@@ -168,25 +168,29 @@ def draw_scoreboard(surface: pygame.Surface, game) -> None:
     draw_ui_panel(surface, panel_rect)
 
     title = game.big_font.render("Scoreboard", True, WHITE)
-    subtitle = game.small_font.render("Previous completed runs", True, TEXT_COLOR)
+    subtitle = game.small_font.render("Previous runs", True, TEXT_COLOR)
     surface.blit(title, title.get_rect(center=(panel_rect.centerx, panel_rect.y + 68)))
     surface.blit(subtitle, subtitle.get_rect(center=(panel_rect.centerx, panel_rect.y + 112)))
 
     header_y = panel_rect.y + 156
+    result_header = game.small_font.render("Result", True, YELLOW)
     time_header = game.small_font.render("Time to finish", True, YELLOW)
     kills_header = game.small_font.render("Enemies killed", True, YELLOW)
-    surface.blit(time_header, (panel_rect.x + 90, header_y))
+    surface.blit(result_header, (panel_rect.x + 40, header_y))
+    surface.blit(time_header, (panel_rect.x + 150, header_y))
     surface.blit(kills_header, (panel_rect.x + 420, header_y))
 
     if game.scoreboard_entries:
         for index, entry in enumerate(game.scoreboard_entries[:6]):
             row_y = header_y + 46 + index * 34
+            result_text = game.small_font.render(entry.get("result", "Victory"), True, WHITE)
             time_text = game.small_font.render(entry["time_to_finish"], True, WHITE)
             kills_text = game.small_font.render(str(entry["enemies_killed"]), True, WHITE)
-            surface.blit(time_text, (panel_rect.x + 110, row_y))
-            surface.blit(kills_text, (panel_rect.x + 475, row_y))
+            surface.blit(result_text, (panel_rect.x + 40, row_y))
+            surface.blit(time_text, (panel_rect.x + 150, row_y))
+            surface.blit(kills_text, (panel_rect.x + 420, row_y))
     else:
-        empty_text = game.font.render("No completed runs yet.", True, WHITE)
+        empty_text = game.font.render("No runs recorded yet.", True, WHITE)
         surface.blit(empty_text, empty_text.get_rect(center=(panel_rect.centerx, panel_rect.centery)))
 
     back_button = get_scoreboard_back_button()
