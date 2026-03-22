@@ -4,7 +4,7 @@ import random
 
 import pygame
 
-from settings import GIRL_COLOR, RED, SKIN_COLOR
+from settings import RED
 
 if TYPE_CHECKING:
     from entities.sea_monster import SeaMonster
@@ -15,14 +15,21 @@ BOAT_HULL_COLOR = (120, 78, 45)
 BOAT_INNER_COLOR = (158, 108, 66)
 BOAT_EDGE_COLOR = (80, 48, 28)
 BOAT_SEAT_COLOR = (95, 62, 38)
-PASSENGER_CLOTHES = [
-    (220, 120, 170),
-    (120, 170, 230),
-    (230, 190, 90),
+
+PASSENGER_SPRITE_OPTIONS = [
+    ("assets/saved_people/Archer_Idle_red.png", 6),
+    ("assets/saved_people/Pawn_Idle_blue.png", 8),
+    ("assets/saved_people/Pawn_Idle_yellow.png", 8),
+    ("assets/saved_people/Monk_Idle_red.png", 6),
+    ("assets/saved_people/Warrior_Idle_black.png", 8),
 ]
 
 
 class Boat:
+    FRAME_WIDTH = 192
+    FRAME_HEIGHT = 192
+    _sprite_cache = {}
+
     def __init__(self, lane: "Lane", speed: float):
         self.lane = lane
         self.speed = speed
@@ -35,6 +42,40 @@ class Boat:
 
         self.bob_phase = self.lane.index * 0.9
         self.passenger_count = random.randint(1, 4)
+        self.passengers = []
+
+        for _ in range(self.passenger_count):
+            sprite_path, frame_count = random.choice(PASSENGER_SPRITE_OPTIONS)
+            self.passengers.append({
+                "frames": self.load_sprite_frames(sprite_path, frame_count),
+                "frame_count": frame_count,
+                "anim_offset": random.uniform(0, frame_count * 0.12),
+            })
+
+    def load_sprite_frames(cls, filename: str, frame_count: int) -> list[pygame.Surface]:
+        key = (filename, frame_count)
+        if key in cls._sprite_cache:
+            return cls._sprite_cache[key]
+
+        sheet = pygame.image.load(filename).convert_alpha()
+        frames = []
+
+        for i in range(frame_count):
+            frame = pygame.Surface((cls.FRAME_WIDTH, cls.FRAME_HEIGHT), pygame.SRCALPHA)
+            frame.blit(
+                sheet,
+                (0, 0),
+                pygame.Rect(
+                    i * cls.FRAME_WIDTH,
+                    0,
+                    cls.FRAME_WIDTH,
+                    cls.FRAME_HEIGHT
+                )
+            )
+            frames.append(frame)
+
+        cls._sprite_cache[key] = frames
+        return frames
 
     def update(self, dt: float) -> None:
         if self.saved or self.captured:
@@ -171,8 +212,6 @@ class Boat:
         pygame.draw.line(screen, BOAT_SEAT_COLOR, seat2_start, seat2_end, 2)
         pygame.draw.line(screen, BOAT_SEAT_COLOR, seat3_start, seat3_end, 2)
 
-        passenger_positions = []
-
         if self.passenger_count == 1:
             passenger_positions = [
                 (x, y + hull_h * 0.08),
@@ -188,7 +227,7 @@ class Boat:
                 (x + hull_w * 0.16, y - hull_h * 0.02),
                 (x, y + hull_h * 0.18),
             ]
-        elif self.passenger_count == 4:
+        else:
             passenger_positions = [
                 (x - hull_w * 0.16, y - hull_h * 0.06),
                 (x + hull_w * 0.16, y - hull_h * 0.06),
@@ -196,19 +235,23 @@ class Boat:
                 (x + hull_w * 0.16, y + hull_h * 0.18),
             ]
 
-        head_radius = max(4, int(size * 0.18))
-        body_w = max(7, int(size * 0.22))
-        body_h = max(9, int(size * 0.28))
+        t_anim = pygame.time.get_ticks() / 1000.0
 
-        for i, (px, py) in enumerate(passenger_positions):
+        for passenger, (px, py) in zip(self.passengers, passenger_positions):
+            frame_index = int((t_anim + passenger["anim_offset"]) / 0.12) % passenger["frame_count"]
+            frame = passenger["frames"][frame_index]
+
+            draw_scale = 0.4
+            draw_w = int(frame.get_width() * draw_scale)
+            draw_h = int(frame.get_height() * draw_scale)
+            frame_scaled = pygame.transform.scale(frame, (draw_w, draw_h))
+
             rpx, rpy = self.rotate_point(px, py, x, y, tilt)
 
-            head_x, head_y = self.rotate_point(px, py - body_h * 0.45, x, y, tilt)
-            pygame.draw.circle(screen, SKIN_COLOR, (int(head_x), int(head_y)), head_radius)
-
-            body_rect = pygame.Rect(0, 0, body_w, body_h)
-            body_rect.center = (int(rpx), int(rpy))
-            pygame.draw.ellipse(screen, PASSENGER_CLOTHES[i % len(PASSENGER_CLOTHES)], body_rect)
+            screen.blit(
+                frame_scaled,
+                (int(rpx - draw_w / 2), int(rpy - draw_h * 0.72))
+            )
 
         if self.captured:
             cross_pad = 5

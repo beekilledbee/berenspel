@@ -1,36 +1,66 @@
 import random
 import pygame
 
-from settings import SKIN_COLOR
-
-CLOTHES = [
-    (220, 120, 170),
-    (120, 170, 230),
-    (230, 190, 90),
-    (140, 220, 140),
-    (210, 140, 90),
-]
-
 
 class SavedPerson:
+    SPRITE_OPTIONS = [
+        ("assets/saved_people/Archer_Idle_red.png", 6),
+        ("assets/saved_people/Pawn_Idle_blue.png", 8),
+        ("assets/saved_people/Pawn_Idle_yellow.png", 8),
+        ("assets/saved_people/Monk_Idle_red.png", 6),
+        ("assets/saved_people/Warrior_Idle_black.png", 8),
+    ]
+
+    FRAME_WIDTH = 192
+    FRAME_HEIGHT = 192
+
+    _cache = {}
+
     def __init__(self, x: float, y: float):
-        self.x = x + random.uniform(-16, 16)
-        self.y = y + random.uniform(-10, 10)
-        self.color = random.choice(CLOTHES)
-        self.size = random.randint(18, 24)
+        self.x = x + random.uniform(-18, 18)
+        self.y = y + random.uniform(-12, 12)
+
+        sprite_path, frame_count = random.choice(self.SPRITE_OPTIONS)
+        self.frames = self.load_frames(sprite_path, frame_count)
+        self.frame_count = frame_count
+
+        self.anim_speed = 0.12
+        self.anim_offset = random.uniform(0, frame_count * self.anim_speed)
+
+        self.scale = random.uniform(0.45, 0.6)
+
+    def load_frames(cls, filename: str, frame_count: int) -> list[pygame.Surface]:
+        key = (filename, frame_count)
+        if key in cls._cache:
+            return cls._cache[key]
+
+        sheet = pygame.image.load(filename).convert_alpha()
+        frames = []
+
+        for i in range(frame_count):
+            frame = pygame.Surface((cls.FRAME_WIDTH, cls.FRAME_HEIGHT), pygame.SRCALPHA)
+            frame.blit(
+                sheet,
+                (0, 0),
+                pygame.Rect(
+                    i * cls.FRAME_WIDTH,
+                    0,
+                    cls.FRAME_WIDTH,
+                    cls.FRAME_HEIGHT
+                )
+            )
+            frames.append(frame)
+
+        cls._cache[key] = frames
+        return frames
 
     def draw(self, screen: pygame.Surface) -> None:
-        head_radius = max(5, self.size // 4)
-        body_w = int(self.size * 0.7)
-        body_h = int(self.size * 1.0)
+        t = pygame.time.get_ticks() / 1000.0
+        frame_index = int((t + self.anim_offset) / self.anim_speed) % self.frame_count
+        frame = self.frames[frame_index]
 
-        pygame.draw.circle(
-            screen,
-            SKIN_COLOR,
-            (int(self.x), int(self.y - body_h * 0.45)),
-            head_radius
-        )
+        draw_w = int(frame.get_width() * self.scale)
+        draw_h = int(frame.get_height() * self.scale)
+        frame_scaled = pygame.transform.scale(frame, (draw_w, draw_h))
 
-        body_rect = pygame.Rect(0, 0, body_w, body_h)
-        body_rect.center = (int(self.x), int(self.y))
-        pygame.draw.ellipse(screen, self.color, body_rect)
+        screen.blit(frame_scaled, (int(self.x - draw_w / 2), int(self.y - draw_h / 2)))

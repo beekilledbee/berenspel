@@ -51,7 +51,7 @@ class TileMap:
         points = []
 
         for layer in self.tmx_data.visible_layers:
-            if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "savd peolpe":
+            if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "saved people":
                 for obj in layer:
                     points.append((obj.x, obj.y))
 
