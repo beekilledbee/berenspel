@@ -1,8 +1,8 @@
 from typing import Optional, TYPE_CHECKING, Tuple
 import math
+import random
 
 import pygame
-import random
 
 from settings import GIRL_COLOR, RED, SKIN_COLOR
 
@@ -15,7 +15,6 @@ BOAT_HULL_COLOR = (120, 78, 45)
 BOAT_INNER_COLOR = (158, 108, 66)
 BOAT_EDGE_COLOR = (80, 48, 28)
 BOAT_SEAT_COLOR = (95, 62, 38)
-BOAT_WAKE_COLOR = (220, 240, 255, 90)
 PASSENGER_CLOTHES = [
     (220, 120, 170),
     (120, 170, 230),
@@ -72,6 +71,16 @@ class Boat:
 
         self.wake_particles = new_particles
 
+    def rotate_point(self, px: float, py: float, cx: float, cy: float, angle: float) -> tuple[float, float]:
+        dx = px - cx
+        dy = py - cy
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        return (
+            cx + dx * cos_a - dy * sin_a,
+            cy + dx * sin_a + dy * cos_a,
+        )
+
     def get_draw_data(self) -> Tuple[float, float, int]:
         x, y = self.lane.position(self.progress)
 
@@ -85,7 +94,6 @@ class Boat:
         return x + sway_x, y + bob_y, size
 
     def draw(self, screen: pygame.Surface) -> None:
-
         for p in self.wake_particles:
             alpha = int(255 * (p["life"] / p["max_life"]) * 0.45)
             bubble_surface = pygame.Surface(
@@ -105,7 +113,11 @@ class Boat:
                     int(p["y"] - bubble_surface.get_height() / 2),
                 ),
             )
+
         x, y, size = self.get_draw_data()
+
+        t = pygame.time.get_ticks() / 1000.0
+        tilt = math.sin(t * 2.4 + self.bob_phase) * 0.08
 
         hull_w = int(size * 1.2)
         hull_h = int(size * 2.0)
@@ -122,6 +134,7 @@ class Boat:
             (right_x, y + hull_h * 0.18),
             (x, bow_y),
         ]
+        hull_points = [self.rotate_point(px, py, x, y, tilt) for px, py in hull_points]
 
         pygame.draw.polygon(screen, BOAT_HULL_COLOR, hull_points)
         pygame.draw.polygon(screen, BOAT_EDGE_COLOR, hull_points, 2)
@@ -137,6 +150,7 @@ class Boat:
             (right_x - inner_margin_x, y + hull_h * 0.12),
             (x, bow_y - inner_margin_bottom),
         ]
+        inner_points = [self.rotate_point(px, py, x, y, tilt) for px, py in inner_points]
 
         pygame.draw.polygon(screen, BOAT_INNER_COLOR, inner_points)
 
@@ -146,9 +160,16 @@ class Boat:
         seat_x1 = x - hull_w * 0.24
         seat_x2 = x + hull_w * 0.24
 
-        pygame.draw.line(screen, BOAT_SEAT_COLOR, (seat_x1, seat_y1), (seat_x2, seat_y1), 2)
-        pygame.draw.line(screen, BOAT_SEAT_COLOR, (seat_x1, seat_y2), (seat_x2, seat_y2), 2)
-        pygame.draw.line(screen, BOAT_SEAT_COLOR, (seat_x1, seat_y3), (seat_x2, seat_y3), 2)
+        seat1_start = self.rotate_point(seat_x1, seat_y1, x, y, tilt)
+        seat1_end = self.rotate_point(seat_x2, seat_y1, x, y, tilt)
+        seat2_start = self.rotate_point(seat_x1, seat_y2, x, y, tilt)
+        seat2_end = self.rotate_point(seat_x2, seat_y2, x, y, tilt)
+        seat3_start = self.rotate_point(seat_x1, seat_y3, x, y, tilt)
+        seat3_end = self.rotate_point(seat_x2, seat_y3, x, y, tilt)
+
+        pygame.draw.line(screen, BOAT_SEAT_COLOR, seat1_start, seat1_end, 2)
+        pygame.draw.line(screen, BOAT_SEAT_COLOR, seat2_start, seat2_end, 2)
+        pygame.draw.line(screen, BOAT_SEAT_COLOR, seat3_start, seat3_end, 2)
 
         passenger_positions = [
             (x - hull_w * 0.16, y - hull_h * 0.02),
@@ -161,10 +182,13 @@ class Boat:
         body_h = max(9, int(size * 0.28))
 
         for i, (px, py) in enumerate(passenger_positions):
-            pygame.draw.circle(screen, SKIN_COLOR, (int(px), int(py - body_h * 0.45)), head_radius)
+            rpx, rpy = self.rotate_point(px, py, x, y, tilt)
+
+            head_x, head_y = self.rotate_point(px, py - body_h * 0.45, x, y, tilt)
+            pygame.draw.circle(screen, SKIN_COLOR, (int(head_x), int(head_y)), head_radius)
 
             body_rect = pygame.Rect(0, 0, body_w, body_h)
-            body_rect.center = (int(px), int(py))
+            body_rect.center = (int(rpx), int(rpy))
             pygame.draw.ellipse(screen, PASSENGER_CLOTHES[i % len(PASSENGER_CLOTHES)], body_rect)
 
         if self.captured:
@@ -175,5 +199,10 @@ class Boat:
                 int(hull_w) - cross_pad * 2,
                 int(hull_h) - cross_pad * 2,
             )
-            pygame.draw.line(screen, RED, rect.topleft, rect.bottomright, 2)
-            pygame.draw.line(screen, RED, rect.topright, rect.bottomleft, 2)
+            cross_tl = self.rotate_point(rect.left, rect.top, x, y, tilt)
+            cross_br = self.rotate_point(rect.right, rect.bottom, x, y, tilt)
+            cross_tr = self.rotate_point(rect.right, rect.top, x, y, tilt)
+            cross_bl = self.rotate_point(rect.left, rect.bottom, x, y, tilt)
+
+            pygame.draw.line(screen, RED, cross_tl, cross_br, 2)
+            pygame.draw.line(screen, RED, cross_tr, cross_bl, 2)
