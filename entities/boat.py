@@ -150,7 +150,6 @@ class Boat:
         pygame.draw.line(screen, BOAT_SEAT_COLOR, (seat_x1, seat_y2), (seat_x2, seat_y2), 2)
         pygame.draw.line(screen, BOAT_SEAT_COLOR, (seat_x1, seat_y3), (seat_x2, seat_y3), 2)
 
-        # meerdere passagiers
         passenger_positions = [
             (x - hull_w * 0.16, y - hull_h * 0.02),
             (x + hull_w * 0.16, y - hull_h * 0.02),
