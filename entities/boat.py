@@ -34,6 +34,7 @@ class Boat:
         self.wake_spawn_timer = 0.0
 
         self.bob_phase = self.lane.index * 0.9
+        self.passenger_count = random.randint(1, 4)
 
     def update(self, dt: float) -> None:
         if self.saved or self.captured:
@@ -84,8 +85,7 @@ class Boat:
     def get_draw_data(self) -> Tuple[float, float, int]:
         x, y = self.lane.position(self.progress)
 
-        scale = 0.55 + self.progress * 1.2
-        size = max(28, int(34 * scale))
+        size = 34
 
         t = pygame.time.get_ticks() / 1000.0
         bob_y = math.sin(t * 3.2 + self.bob_phase) * max(1.5, size * 0.05)
@@ -171,11 +171,30 @@ class Boat:
         pygame.draw.line(screen, BOAT_SEAT_COLOR, seat2_start, seat2_end, 2)
         pygame.draw.line(screen, BOAT_SEAT_COLOR, seat3_start, seat3_end, 2)
 
-        passenger_positions = [
-            (x - hull_w * 0.16, y - hull_h * 0.02),
-            (x + hull_w * 0.16, y - hull_h * 0.02),
-            (x, y + hull_h * 0.18),
-        ]
+        passenger_positions = []
+
+        if self.passenger_count == 1:
+            passenger_positions = [
+                (x, y + hull_h * 0.08),
+            ]
+        elif self.passenger_count == 2:
+            passenger_positions = [
+                (x - hull_w * 0.14, y + hull_h * 0.02),
+                (x + hull_w * 0.14, y + hull_h * 0.02),
+            ]
+        elif self.passenger_count == 3:
+            passenger_positions = [
+                (x - hull_w * 0.16, y - hull_h * 0.02),
+                (x + hull_w * 0.16, y - hull_h * 0.02),
+                (x, y + hull_h * 0.18),
+            ]
+        elif self.passenger_count == 4:
+            passenger_positions = [
+                (x - hull_w * 0.16, y - hull_h * 0.06),
+                (x + hull_w * 0.16, y - hull_h * 0.06),
+                (x - hull_w * 0.16, y + hull_h * 0.18),
+                (x + hull_w * 0.16, y + hull_h * 0.18),
+            ]
 
         head_radius = max(4, int(size * 0.18))
         body_w = max(7, int(size * 0.22))

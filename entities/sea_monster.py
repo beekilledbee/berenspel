@@ -81,8 +81,7 @@ class SeaMonster(Enemy):
         else:
             x = base_x + self.lateral_offset * (1.0 - self.progress)
 
-        scale = 0.42 + self.progress * 1.18
-        size = max(20, int(30 * scale))
+        size = 30
 
         t = pygame.time.get_ticks() / 1000.0
         sway_x = math.sin(t * 4.0 + self.wobble_phase) * max(1.0, size * 0.05)
