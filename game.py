@@ -153,6 +153,19 @@ class Game:
         for monster in self.monsters:
             monster.update(dt)
 
+            if monster.dead:
+                continue
+
+            if not monster.has_valid_target():
+                candidates = [
+                    b for b in self.boats
+                    if b.lane.index == monster.lane.index and not b.saved and not b.captured
+                ]
+                if candidates:
+                    monster.target_boat = max(candidates, key=lambda b: b.progress)
+                else:
+                    monster.target_boat = None
+
         for boat in self.boats:
             if boat.saved or boat.captured:
                 continue
@@ -175,19 +188,13 @@ class Game:
                 return
 
         for monster in self.monsters:
-            if monster.dead or monster.grabbing:
+            if monster.dead or not monster.has_valid_target():
                 continue
-            for boat in self.boats:
-                if boat.saved or boat.captured:
-                    continue
-                if monster.lane.index != boat.lane.index:
-                    continue
-                if monster.progress >= boat.progress:
-                    monster.grabbing = True
-                    monster.target_boat = boat
-                    boat.captured = True
-                    boat.capture_monster = monster
-                    break
+
+            boat = monster.target_boat
+            if monster.progress >= boat.progress:
+                boat.captured = True
+                monster.target_boat = None
 
         remaining_boats: List[Boat] = []
         for boat in self.boats:

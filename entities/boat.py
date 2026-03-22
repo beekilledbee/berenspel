@@ -19,10 +19,7 @@ class Boat:
         self.capture_monster: Optional["SeaMonster"] = None
 
     def update(self, dt: float) -> None:
-        if self.saved:
-            return
-        if self.captured and self.capture_monster is not None:
-            self.progress = self.capture_monster.progress
+        if self.saved or self.captured:
             return
 
         self.progress += self.speed * dt

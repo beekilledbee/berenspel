@@ -19,9 +19,9 @@ class SeaMonster(Enemy):
     def get_draw_data(self) -> Tuple[float, float, int]:
         base_x, y = self.lane.position(self.progress)
 
-        if self.target_boat is not None and not self.target_boat.saved:
+        if self.has_valid_target():
             target_x, _ = self.target_boat.lane.position(self.target_boat.progress)
-            x = base_x + (target_x - base_x) * self.progress
+            x = base_x + (target_x - base_x) * min(1.0, self.progress * 1.2)
             x += self.lateral_offset * (1.0 - self.progress) * 0.5
         else:
             x = base_x + self.lateral_offset * (1.0 - self.progress)
@@ -29,6 +29,13 @@ class SeaMonster(Enemy):
         scale = 0.34 + self.progress * 1.12
         size = max(14, int(28 * scale))
         return x, y, size
+    
+    def has_valid_target(self) -> bool:
+        return (
+            self.target_boat is not None
+            and not self.target_boat.saved
+            and not self.target_boat.captured
+        )
 
     def draw(self, screen: pygame.Surface) -> None:
         if not self.should_flash_draw():
