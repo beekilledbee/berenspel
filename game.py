@@ -10,6 +10,7 @@ import pygame
 
 from effects import BloodEffect
 from entities import SeaMonster, Boat, Lane, PlayerGun, Projectile, create_weapons
+from sound import SoundManager
 from ui import (
     draw_cursor,
     draw_main_menu,
@@ -61,6 +62,8 @@ class Game:
         self.screen_state = "menu"
         self.scoreboard_path = Path(__file__).resolve().parent / "scoreboard.json"
         self.scoreboard_entries = self.load_scoreboard()
+
+        self.sound_manager = SoundManager()
 
         self.reset()
 
@@ -165,6 +168,7 @@ class Game:
         self.reset()
         self.screen_state = "game"
         pygame.mouse.set_visible(False)
+        self.sound_manager.play_bgm()
 
     def pause_game(self) -> None:
         self.trigger_held = False
@@ -183,6 +187,7 @@ class Game:
         self.auto_fire_timer = 0.0
         self.screen_state = "menu"
         pygame.mouse.set_visible(True)
+        self.sound_manager.stop_bgm()
 
     def show_scoreboard(self) -> None:
         self.trigger_held = False
@@ -261,6 +266,9 @@ class Game:
         weapon.consume_ammo()
         self.gun.shoot()
 
+        weapon_names = ["pistol", "shotgun", "rifle", "rpg"]
+        self.sound_manager.play(weapon_names[self.current_weapon_index])
+
         if weapon.projectile_speed > 0:
             # RPG: spawn a projectile
             mx, my = self.gun.muzzle_position()
@@ -285,6 +293,7 @@ class Game:
                         if monster.dead:
                             self.score += 100
                             self.enemies_killed += 1
+                            self.sound_manager.play("monster_dead")
 
             self.gun.angle = original_angle
 
@@ -347,6 +356,8 @@ class Game:
             if self.tilemap.is_land_at_pixel(x, foot_y):
                 self.game_over = True
                 self.record_result("Failed")
+                self.sound_manager.play("game_over")
+                self.sound_manager.stop_bgm()
                 return
 
         for monster in self.monsters:
@@ -363,10 +374,12 @@ class Game:
             if boat.saved:
                 self.saved_boats += 1
                 self.score += 50
+                self.sound_manager.play("boat_saved")
                 for weapon in self.weapons:
                     weapon.add_ammo(AMMO_REWARD)
                 continue
             if boat.captured:
+                self.sound_manager.play("boat_sunk")
                 continue
             remaining_boats.append(boat)
         self.boats = remaining_boats
@@ -415,6 +428,7 @@ class Game:
                         if monster.dead:
                             self.score += 100
                             self.enemies_killed += 1
+                            self.sound_manager.play("monster_dead")
 
         self.projectiles = [p for p in self.projectiles if p.update(dt)]
         self.monsters = [m for m in self.monsters if (not m.remove) and m.progress <= 1.08]
@@ -423,6 +437,8 @@ class Game:
         if self.saved_boats >= GOAL_SAVED_GIRLS:
             self.victory = True
             self.record_result("Victory")
+            self.sound_manager.play("victory")
+            self.sound_manager.stop_bgm()
 
     def update(self, dt: float) -> None:
         if self.screen_state != "game":
