@@ -1,6 +1,6 @@
 # Berenspel
 
-Berenspel is a top-down arcade defense game built with `pygame`. You defend the shoreline against sea monsters while rescue boats try to reach land. The goal is to save enough boats before any monster reaches the island.
+Berenspel is a top-down arcade defense game built with `pygame`. You defend the shoreline against sea monsters while rescue boats try to reach land. The goal is to save enough boats before any monster reaches the island. It is inspired by a legacy flash game where the player had to shoot down bears and prevent the bears from capturing people. But in our implementation, we switched over to sea monsters and and saving boats.
 
 ## Features
 
