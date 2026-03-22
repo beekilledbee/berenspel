@@ -81,14 +81,16 @@ class Game:
         self.boats.append(Boat(lane, speed))
 
     def spawn_monster(self) -> None:
-        lane = random.choice(self.lanes)
+        candidate_boats = [b for b in self.boats if not b.saved and not b.captured]
+        if not candidate_boats:
+            return
+
+        target = max(candidate_boats, key=lambda b: b.progress)
+        lane = target.lane
+
         speed = random.uniform(0.18, 0.24)
         monster = SeaMonster(lane, speed)
-
-        candidates = [b for b in self.boats if b.lane == lane and not b.saved and not b.captured]
-        if candidates:
-            target = max(candidates, key=lambda g: g.progress)
-            monster.target_boat = target
+        monster.target_boat = target
 
         self.monsters.append(monster)
 
