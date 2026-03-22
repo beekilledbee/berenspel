@@ -1,5 +1,11 @@
 [
   {
+    "time_to_finish": "00:09",
+    "enemies_killed": 3,
+    "result": "Failed",
+    "date": "2026-03-22 21:34:01"
+  },
+  {
     "time_to_finish": "00:08",
     "enemies_killed": 1,
     "result": "Failed",

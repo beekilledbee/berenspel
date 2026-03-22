@@ -71,6 +71,16 @@ class SeaMonster(Enemy):
 
         self.wake_particles = new_particles
 
+    def rotate_point(self, px: float, py: float, cx: float, cy: float, angle: float) -> tuple[float, float]:
+        dx = px - cx
+        dy = py - cy
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        return (
+            cx + dx * cos_a - dy * sin_a,
+            cy + dx * sin_a + dy * cos_a,
+        )
+
     def get_draw_data(self) -> Tuple[float, float, int]:
         base_x, y = self.lane.position(self.progress)
 
@@ -120,6 +130,16 @@ class SeaMonster(Enemy):
         body_w = int(size * 1.35)
         body_h = int(size * 1.55)
 
+        tilt = 0.0
+        if self.has_valid_target():
+            base_x, _ = self.lane.position(self.progress)
+            target_x, _ = self.target_boat.lane.position(self.target_boat.progress)
+            dx = target_x - base_x
+            tilt = max(-0.18, min(0.18, dx / 250.0))
+
+        t = pygame.time.get_ticks() / 1000.0
+        tilt += math.sin(t * 4.0 + self.wobble_phase) * 0.03
+
         head_y = y + body_h * 0.42
         tail_y = y - body_h * 0.45
         left_x = x - body_w * 0.5
@@ -135,13 +155,11 @@ class SeaMonster(Enemy):
             (left_x, y + body_h * 0.12),
             (left_x * 0.92 + x * 0.08, y - body_h * 0.08),
         ]
+        body_points = [self.rotate_point(px, py, x, y, tilt) for px, py in body_points]
 
         pygame.draw.polygon(screen, color, body_points)
         pygame.draw.polygon(screen, MONSTER_DARK_COLOR, body_points, 2)
 
-        belly_rect = pygame.Rect(0, 0, int(body_w * 0.48), int(body_h * 0.55))
-        belly_rect.center = (int(x), int(y + body_h * 0.12))
-        pygame.draw.ellipse(screen, MONSTER_BELLY_COLOR, belly_rect)
         fin_left = [
             (x - body_w * 0.35, y + body_h * 0.02),
             (x - body_w * 0.68, y + body_h * 0.16),
@@ -152,30 +170,47 @@ class SeaMonster(Enemy):
             (x + body_w * 0.68, y + body_h * 0.16),
             (x + body_w * 0.38, y + body_h * 0.26),
         ]
+
+        fin_left = [self.rotate_point(px, py, x, y, tilt) for px, py in fin_left]
+        fin_right = [self.rotate_point(px, py, x, y, tilt) for px, py in fin_right]
+
         pygame.draw.polygon(screen, color, fin_left)
         pygame.draw.polygon(screen, color, fin_right)
 
-        eye_radius = max(2, int(size * 0.10))
-        eye_y = int(y + body_h * 0.22)
-        pygame.draw.circle(screen, MONSTER_EYE_COLOR, (int(x - body_w * 0.13), eye_y), eye_radius)
-        pygame.draw.circle(screen, MONSTER_EYE_COLOR, (int(x + body_w * 0.13), eye_y), eye_radius)
+        belly_center = self.rotate_point(x, y + body_h * 0.12, x, y, tilt)
+        belly_rect = pygame.Rect(0, 0, int(body_w * 0.48), int(body_h * 0.55))
+        belly_rect.center = (int(belly_center[0]), int(belly_center[1]))
+        pygame.draw.ellipse(screen, MONSTER_BELLY_COLOR, belly_rect)
 
-        # tanden
-        mouth_y = int(y + body_h * 0.34)
+        eye_radius = max(2, int(size * 0.10))
+
+        eye_left = self.rotate_point(x - body_w * 0.13, y + body_h * 0.22, x, y, tilt)
+        eye_right = self.rotate_point(x + body_w * 0.13, y + body_h * 0.22, x, y, tilt)
+
+        pygame.draw.circle(screen, MONSTER_EYE_COLOR, (int(eye_left[0]), int(eye_left[1])), eye_radius)
+        pygame.draw.circle(screen, MONSTER_EYE_COLOR, (int(eye_right[0]), int(eye_right[1])), eye_radius)
+
+        mouth_left = self.rotate_point(x - body_w * 0.12, y + body_h * 0.34, x, y, tilt)
+        mouth_right = self.rotate_point(x + body_w * 0.12, y + body_h * 0.34, x, y, tilt)
+
         pygame.draw.line(
             screen,
             MONSTER_DARK_COLOR,
-            (int(x - body_w * 0.12), mouth_y),
-            (int(x + body_w * 0.12), mouth_y),
+            mouth_left,
+            mouth_right,
             2,
         )
 
+        tail_start = self.rotate_point(x, tail_y, x, y, tilt)
+        tail_end = self.rotate_point(x, tail_y - body_h * 0.18, x, y, tilt)
+
         pygame.draw.line(
             screen,
             MONSTER_DARK_COLOR,
-            (int(x), int(tail_y)),
-            (int(x), int(tail_y - body_h * 0.18)),
+            tail_start,
+            tail_end,
             max(2, int(size * 0.08)),
         )
 
-        pygame.draw.circle(screen, RED, (int(x), int(y)), max(5, size // 5), 2)
+        marker_center = self.rotate_point(x, y, x, y, tilt)
+        pygame.draw.circle(screen, RED, (int(marker_center[0]), int(marker_center[1])), max(5, size // 5), 2)
