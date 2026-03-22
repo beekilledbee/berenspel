@@ -82,12 +82,16 @@ class TileMap:
                     draw_x = x * self.tile_width
                     draw_y = y * self.tile_height
 
-                    if layer.name == "foam":
+                    if layer.name in "foam":
                         tile = self.get_foam_frame(x, y)
                         draw_x -= 64
                         draw_y -= 64
                     else:
                         tile = self.tmx_data.get_tile_image_by_gid(gid)
+
+                        if layer.name == "shadow":
+                            draw_x -= 64
+                            draw_y -= 64
 
                     if tile is not None:
                         surface.blit(tile, (draw_x, draw_y))
