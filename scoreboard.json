@@ -1,5 +1,35 @@
 [
   {
+    "time_to_finish": "01:09",
+    "enemies_killed": 42,
+    "result": "Victory",
+    "date": "2026-03-22 22:43:42"
+  },
+  {
+    "time_to_finish": "00:07",
+    "enemies_killed": 1,
+    "result": "Failed",
+    "date": "2026-03-22 22:42:31"
+  },
+  {
+    "time_to_finish": "00:10",
+    "enemies_killed": 4,
+    "result": "Failed",
+    "date": "2026-03-22 22:42:21"
+  },
+  {
+    "time_to_finish": "00:17",
+    "enemies_killed": 4,
+    "result": "Failed",
+    "date": "2026-03-22 22:41:31"
+  },
+  {
+    "time_to_finish": "00:16",
+    "enemies_killed": 8,
+    "result": "Failed",
+    "date": "2026-03-22 22:41:07"
+  },
+  {
     "time_to_finish": "00:11",
     "enemies_killed": 4,
     "result": "Failed",

@@ -12,6 +12,8 @@ from effects import BloodEffect
 from entities import SeaMonster, Boat, Lane, PlayerGun, Projectile, create_weapons
 from sound import SoundManager
 from ui import (
+    SCOREBOARD_ROW_HEIGHT,
+    SCOREBOARD_VISIBLE_ROWS,
     draw_cursor,
     draw_main_menu,
     draw_overlay,
@@ -62,6 +64,7 @@ class Game:
         self.screen_state = "menu"
         self.scoreboard_path = Path(__file__).resolve().parent / "scoreboard.json"
         self.scoreboard_entries = self.load_scoreboard()
+        self.scoreboard_scroll_offset = 0
 
         self.sound_manager = SoundManager()
 
@@ -193,7 +196,20 @@ class Game:
         self.trigger_held = False
         self.auto_fire_timer = 0.0
         self.screen_state = "scoreboard"
+        self.scoreboard_scroll_offset = 0
         pygame.mouse.set_visible(True)
+
+    def get_scoreboard_max_scroll(self) -> int:
+        hidden_rows = max(0, len(self.scoreboard_entries) - SCOREBOARD_VISIBLE_ROWS)
+        return hidden_rows * SCOREBOARD_ROW_HEIGHT
+
+    def scroll_scoreboard(self, direction: int) -> None:
+        step = SCOREBOARD_ROW_HEIGHT
+        max_scroll = self.get_scoreboard_max_scroll()
+        self.scoreboard_scroll_offset = max(
+            0,
+            min(max_scroll, self.scoreboard_scroll_offset + direction * step),
+        )
 
     def quit_game(self) -> None:
         self.running = False
@@ -532,6 +548,12 @@ class Game:
                 self.switch_weapon((self.current_weapon_index - 1) % len(self.weapons))
             elif self.screen_state == "game" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                 self.switch_weapon((self.current_weapon_index + 1) % len(self.weapons))
+            elif self.screen_state == "scoreboard" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+                self.scroll_scoreboard(-1)
+            elif self.screen_state == "scoreboard" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+                self.scroll_scoreboard(1)
+            elif self.screen_state == "scoreboard" and event.type == pygame.MOUSEWHEEL:
+                self.scroll_scoreboard(-event.y)
 
     def handle_menu_click(self) -> None:
         mouse_pos = self.get_virtual_mouse_pos()

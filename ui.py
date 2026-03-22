@@ -17,6 +17,8 @@ from settings import (
 MENU_PANEL_SIZE = (1050, 420)
 BUTTON_SIZE = (220, 54)
 CURSOR_SIZE = (26, 26)
+SCOREBOARD_ROW_HEIGHT = 34
+SCOREBOARD_VISIBLE_ROWS = 4
 _CURSOR_SURFACE: pygame.Surface | None = None
 
 
@@ -98,6 +100,15 @@ def get_scoreboard_back_button() -> pygame.Rect:
     return pygame.Rect(panel_rect.centerx - BUTTON_SIZE[0] // 2, panel_rect.bottom - 74, *BUTTON_SIZE)
 
 
+def get_scoreboard_list_rect() -> pygame.Rect:
+    panel_rect = get_menu_panel_rect()
+    back_button = get_scoreboard_back_button()
+    height = SCOREBOARD_VISIBLE_ROWS * SCOREBOARD_ROW_HEIGHT + 20
+    bottom = back_button.y - 16
+    top = bottom - height
+    return pygame.Rect(panel_rect.x + 28, top, panel_rect.width - 56, bottom - top)
+
+
 def get_pause_menu_buttons() -> dict[str, pygame.Rect]:
     continue_button_x = SCREEN_WIDTH // 2 - BUTTON_SIZE[0] // 2
     continue_button_y = 360
@@ -172,7 +183,7 @@ def draw_scoreboard(surface: pygame.Surface, game) -> None:
     surface.blit(title, title.get_rect(center=(panel_rect.centerx, panel_rect.y + 68)))
     surface.blit(subtitle, subtitle.get_rect(center=(panel_rect.centerx, panel_rect.y + 112)))
 
-    header_y = panel_rect.y + 156
+    header_y = panel_rect.y + 140
     result_header = game.small_font.render("Result", True, YELLOW)
     time_header = game.small_font.render("Time to finish", True, YELLOW)
     kills_header = game.small_font.render("Enemies killed", True, YELLOW)
@@ -182,17 +193,38 @@ def draw_scoreboard(surface: pygame.Surface, game) -> None:
     surface.blit(kills_header, (panel_rect.x + 420, header_y))
     surface.blit(date_header, (panel_rect.x + 700, header_y))
 
+    list_rect = get_scoreboard_list_rect()
+    pygame.draw.rect(surface, (20, 20, 20), list_rect, border_radius=10)
+    pygame.draw.rect(surface, WHITE, list_rect, 2, border_radius=10)
+
     if game.scoreboard_entries:
-        for index, entry in enumerate(game.scoreboard_entries[:6]):
-            row_y = header_y + 46 + index * 34
+        list_surface = pygame.Surface((list_rect.width, list_rect.height), pygame.SRCALPHA)
+        row_height = SCOREBOARD_ROW_HEIGHT
+        total_height = len(game.scoreboard_entries) * row_height
+
+        for index, entry in enumerate(game.scoreboard_entries):
+            row_y = index * row_height - game.scoreboard_scroll_offset + 10
+            if row_y + row_height < 0 or row_y > list_rect.height:
+                continue
             result_text = game.small_font.render(entry.get("result", "Victory"), True, WHITE)
             time_text = game.small_font.render(entry["time_to_finish"], True, WHITE)
             kills_text = game.small_font.render(str(entry["enemies_killed"]), True, WHITE)
             date_text = game.small_font.render(str(entry["date"]), True, WHITE)
-            surface.blit(result_text, (panel_rect.x + 40, row_y))
-            surface.blit(time_text, (panel_rect.x + 150, row_y))
-            surface.blit(kills_text, (panel_rect.x + 420, row_y))
-            surface.blit(date_text, (panel_rect.x + 700, row_y))
+            list_surface.blit(result_text, (12, row_y))
+            list_surface.blit(time_text, (122, row_y))
+            list_surface.blit(kills_text, (392, row_y))
+            list_surface.blit(date_text, (672, row_y))
+
+        surface.blit(list_surface, list_rect.topleft)
+
+        if total_height > list_rect.height:
+            track_rect = pygame.Rect(list_rect.right - 14, list_rect.y + 10, 6, list_rect.height - 20)
+            thumb_height = max(36, int(track_rect.height * (list_rect.height / total_height)))
+            max_scroll = max(1, total_height - list_rect.height)
+            thumb_y = track_rect.y + int((track_rect.height - thumb_height) * (game.scoreboard_scroll_offset / max_scroll))
+            thumb_rect = pygame.Rect(track_rect.x, thumb_y, track_rect.width, thumb_height)
+            pygame.draw.rect(surface, (70, 70, 70), track_rect, border_radius=4)
+            pygame.draw.rect(surface, YELLOW, thumb_rect, border_radius=4)
     else:
         empty_text = game.font.render("No runs recorded yet.", True, WHITE)
         surface.blit(empty_text, empty_text.get_rect(center=(panel_rect.centerx, panel_rect.centery)))
