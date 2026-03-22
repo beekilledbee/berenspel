@@ -154,6 +154,17 @@ class Game:
             monster.update(dt)
 
         for monster in self.monsters:
+            if monster.dead:
+                continue
+
+            x, y, size = monster.get_draw_data()
+            foot_y = y + size * 0.35
+
+            if self.tilemap.is_land_at_pixel(x, foot_y):
+                self.game_over = True
+                return
+
+        for monster in self.monsters:
             if monster.dead or monster.grabbing:
                 continue
             for boat in self.boats:
@@ -183,8 +194,6 @@ class Game:
         self.monsters = [m for m in self.monsters if (not m.remove) and m.progress <= 1.08]
         self.effects = [effect for effect in self.effects if effect.update(dt)]
 
-        if any((not m.dead) and m.progress >= 1.0 for m in self.monsters):
-            self.game_over = True
         if self.saved_boats >= GOAL_SAVED_GIRLS:
             self.victory = True
 

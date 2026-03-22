@@ -61,7 +61,7 @@ def draw_overlay(surface: pygame.Surface, game) -> None:
         subtitle = game.font.render("Press R to play again or ESC to quit", True, WHITE)
     else:
         title = game.big_font.render("GAME OVER", True, WHITE)
-        subtitle = game.font.render("A sea monster reached the lighthouse. Press R to retry.", True, WHITE)
+        subtitle = game.font.render("A sea monster reached the island. Press R to retry.", True, WHITE)
 
     surface.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 30)))
     surface.blit(subtitle, subtitle.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 28)))
