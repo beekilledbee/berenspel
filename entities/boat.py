@@ -24,9 +24,8 @@ class Boat:
         if self.captured and self.capture_monster is not None:
             self.progress = self.capture_monster.progress
             return
+
         self.progress += self.speed * dt
-        if self.progress >= 1.0:
-            self.saved = True
 
     def get_draw_data(self) -> Tuple[float, float, int]:
         x, y = self.lane.position(self.progress)

@@ -153,6 +153,16 @@ class Game:
         for monster in self.monsters:
             monster.update(dt)
 
+        for boat in self.boats:
+            if boat.saved or boat.captured:
+                continue
+
+            x, y, size = boat.get_draw_data()
+            foot_y = y + size * 0.35
+
+            if self.tilemap.is_land_at_pixel(x, foot_y):
+                boat.saved = True
+
         for monster in self.monsters:
             if monster.dead:
                 continue
@@ -186,7 +196,7 @@ class Game:
                 self.score += 50
                 self.ammo += AMMO_REWARD
                 continue
-            if boat.captured and boat.capture_monster and boat.capture_monster.dead:
+            if boat.captured:
                 continue
             remaining_boats.append(boat)
         self.boats = remaining_boats
