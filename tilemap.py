@@ -8,10 +8,9 @@ class TileMap:
         self.tile_width = self.tmx_data.tilewidth
         self.tile_height = self.tmx_data.tileheight
 
-        # Foam animation settings
         self.foam_frame_width = 192
         self.foam_frame_height = 192
-        self.foam_frame_count = 16
+        self.foam_frame_count = 12
         self.foam_frame_duration = 100  # ms per frame
 
         self.foam_frames = self.load_foam_frames("assets/Water Foam.png")
@@ -39,14 +38,17 @@ class TileMap:
 
         return frames
 
-    def get_current_foam_frame(self) -> pygame.Surface:
+    def get_foam_frame(self, x: int, y: int) -> pygame.Surface:
         current_time = pygame.time.get_ticks()
-        frame_index = (current_time // self.foam_frame_duration) % self.foam_frame_count
+        global_frame = (current_time // self.foam_frame_duration) % self.foam_frame_count
+
+        # vaste offset per foam-tile
+        phase_offset = (x * 7 + y * 13) % self.foam_frame_count
+
+        frame_index = (global_frame + phase_offset) % self.foam_frame_count
         return self.foam_frames[frame_index]
 
     def draw(self, surface: pygame.Surface) -> None:
-        current_foam_frame = self.get_current_foam_frame()
-
         for layer in self.tmx_data.visible_layers:
             if isinstance(layer, pytmx.TiledTileLayer):
                 for x, y, gid in layer:
@@ -57,7 +59,7 @@ class TileMap:
                     draw_y = y * self.tile_height
 
                     if layer.name == "foam":
-                        tile = current_foam_frame
+                        tile = self.get_foam_frame(x, y)
                         draw_x -= 64
                         draw_y -= 64
                     else:
