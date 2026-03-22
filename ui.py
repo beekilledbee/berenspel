@@ -4,7 +4,7 @@ from pathlib import Path
 from settings import (
     BLACK,
     GOAL_SAVED_GIRLS,
-    MAX_VISIBLE_AMMO,
+
     PANEL_COLOR,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -138,7 +138,7 @@ def draw_main_menu(surface: pygame.Surface, game) -> None:
 
     title = game.big_font.render(TITLE, True, WHITE)
     subtitle = game.font.render("Rescue the boats before the sea monsters reach shore.", True, TEXT_COLOR)
-    controls = game.small_font.render("Aim with mouse, hold left click to shoot, R to restart a run", True, WHITE)
+    controls = game.small_font.render("Aim with mouse, LMB to shoot, 1-4 or scroll to switch weapon", True, WHITE)
     goal = game.small_font.render(f"Goal: save {GOAL_SAVED_GIRLS} boats.", True, WHITE)
     helper = game.small_font.render("Use the buttons below to start, view scores, or quit.", True, WHITE)
 
@@ -236,7 +236,8 @@ def draw_ui(surface: pygame.Surface, game) -> None:
     panel_rect = pygame.Rect(14, 14, 320, 150)
     draw_ui_panel(surface, panel_rect)
 
-    ammo_text = game.font.render(f"Ammo: {game.ammo}", True, TEXT_COLOR)
+    weapon = game.current_weapon
+    ammo_text = game.font.render(f"{weapon.name}: {weapon.ammo}/{weapon.max_ammo}", True, TEXT_COLOR)
     saved_text = game.font.render(f"Saved: {game.saved_boats}/{GOAL_SAVED_GIRLS}", True, TEXT_COLOR)
     score_text = game.font.render(f"Score: {game.score}", True, TEXT_COLOR)
 
@@ -248,12 +249,108 @@ def draw_ui(surface: pygame.Surface, game) -> None:
     pygame.draw.rect(surface, BLACK, bar_rect)
     pygame.draw.rect(surface, WHITE, bar_rect, 2)
 
-    fill = int(bar_rect.width * clamp(game.ammo / MAX_VISIBLE_AMMO, 0.0, 1.0))
+    fill = int(bar_rect.width * clamp(weapon.ammo / weapon.max_ammo, 0.0, 1.0))
     if fill > 0:
         pygame.draw.rect(surface, YELLOW, (bar_rect.x, bar_rect.y, fill, bar_rect.height))
 
-    hint = game.small_font.render("Mouse = aim   Left click = shoot   R = restart   ESC = pause", True, WHITE)
-    surface.blit(hint, (SCREEN_WIDTH - 420, 20))
+    hint = game.small_font.render("Mouse = aim   LMB = shoot   1-4/Scroll = weapon   R = restart", True, WHITE)
+    surface.blit(hint, (SCREEN_WIDTH - 440, 20))
+
+
+_WEAPON_NAME_FONT: pygame.font.Font | None = None
+_WEAPON_SLOT_FONT: pygame.font.Font | None = None
+
+
+def _get_weapon_name_font() -> pygame.font.Font:
+    global _WEAPON_NAME_FONT
+    if _WEAPON_NAME_FONT is None:
+        _WEAPON_NAME_FONT = pygame.font.SysFont("arial", 36, bold=True)
+    return _WEAPON_NAME_FONT
+
+
+def _get_weapon_slot_font() -> pygame.font.Font:
+    global _WEAPON_SLOT_FONT
+    if _WEAPON_SLOT_FONT is None:
+        _WEAPON_SLOT_FONT = pygame.font.SysFont("arial", 14)
+    return _WEAPON_SLOT_FONT
+
+
+WEAPON_COLORS = {
+    "Pistol": (200, 200, 200),
+    "Shotgun": (180, 140, 80),
+    "Rifle": (130, 180, 255),
+    "RPG": (255, 140, 60),
+}
+
+
+def draw_weapon_selector(surface: pygame.Surface, game) -> None:
+    weapons = game.weapons
+    active_index = game.current_weapon_index
+    active_weapon = weapons[active_index]
+
+    # Large active weapon name display (top-right area below hints)
+    name_font = _get_weapon_name_font()
+    weapon_color = WEAPON_COLORS.get(active_weapon.name, WHITE)
+    name_text = name_font.render(active_weapon.name.upper(), True, weapon_color)
+    name_rect = name_text.get_rect(right=SCREEN_WIDTH - 20, top=46)
+
+    # Background for weapon name
+    name_bg = pygame.Surface((name_rect.width + 16, name_rect.height + 8), pygame.SRCALPHA)
+    name_bg.fill((0, 0, 0, 100))
+    surface.blit(name_bg, (name_rect.x - 8, name_rect.y - 4))
+    surface.blit(name_text, name_rect)
+
+    # Bottom weapon selector bar
+    slot_width = 90
+    slot_height = 56
+    gap = 6
+    selector_width = len(weapons) * (slot_width + gap) - gap + 20
+    start_x = (SCREEN_WIDTH - selector_width) // 2
+    y = SCREEN_HEIGHT - slot_height - 14
+
+    panel = pygame.Surface((selector_width, slot_height + 8), pygame.SRCALPHA)
+    panel.fill(PANEL_COLOR)
+    surface.blit(panel, (start_x, y))
+    pygame.draw.rect(surface, WHITE, (start_x, y, selector_width, slot_height + 8), 2)
+
+    slot_font = _get_weapon_slot_font()
+
+    for i, weapon in enumerate(weapons):
+        box_x = start_x + 10 + i * (slot_width + gap)
+        box_rect = pygame.Rect(box_x, y + 4, slot_width, slot_height)
+        w_color = WEAPON_COLORS.get(weapon.name, WHITE)
+
+        if i == active_index:
+            # Active weapon: highlighted with weapon color border
+            pygame.draw.rect(surface, (30, 30, 30), box_rect, border_radius=6)
+            pygame.draw.rect(surface, w_color, box_rect, 3, border_radius=6)
+            text_color = WHITE
+        else:
+            pygame.draw.rect(surface, (40, 40, 40), box_rect, border_radius=6)
+            pygame.draw.rect(surface, (80, 80, 80), box_rect, 1, border_radius=6)
+            text_color = (160, 160, 160)
+
+        # Key hint (top-left corner)
+        key_text = slot_font.render(weapon.key_hint, True, w_color if i == active_index else (120, 120, 120))
+        surface.blit(key_text, (box_rect.x + 5, box_rect.y + 2))
+
+        # Weapon name
+        name_text = slot_font.render(weapon.name, True, text_color)
+        surface.blit(name_text, name_text.get_rect(centerx=box_rect.centerx, top=box_rect.y + 4))
+
+        # Ammo count
+        ammo_str = f"{weapon.ammo}"
+        ammo_text = slot_font.render(ammo_str, True, text_color)
+        surface.blit(ammo_text, ammo_text.get_rect(centerx=box_rect.centerx, top=box_rect.y + 22))
+
+        # Mini ammo bar
+        bar_rect = pygame.Rect(box_rect.x + 6, box_rect.bottom - 10, box_rect.width - 12, 5)
+        pygame.draw.rect(surface, (20, 20, 20), bar_rect)
+        fill_ratio = weapon.ammo / weapon.max_ammo if weapon.max_ammo > 0 else 0
+        fill_w = int(bar_rect.width * clamp(fill_ratio, 0.0, 1.0))
+        if fill_w > 0:
+            bar_color = w_color if i == active_index else (100, 100, 100)
+            pygame.draw.rect(surface, bar_color, (bar_rect.x, bar_rect.y, fill_w, bar_rect.height))
 
 
 def draw_overlay(surface: pygame.Surface, game) -> None:

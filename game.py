@@ -9,7 +9,7 @@ from typing import List
 import pygame
 
 from effects import BloodEffect
-from entities import SeaMonster, Boat, Lane, PlayerGun
+from entities import SeaMonster, Boat, Lane, PlayerGun, Projectile, create_weapons
 from ui import (
     draw_cursor,
     draw_main_menu,
@@ -17,6 +17,7 @@ from ui import (
     draw_pause_menu,
     draw_scoreboard,
     draw_ui,
+    draw_weapon_selector,
     format_elapsed_time,
     get_main_menu_buttons,
     get_pause_menu_buttons,
@@ -31,8 +32,6 @@ from settings import (
     GOAL_SAVED_GIRLS,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    SHOT_COOLDOWN,
-    START_AMMO,
     TITLE,
 )
 
@@ -70,13 +69,17 @@ class Game:
         self.gun = PlayerGun()
         self.spawner = SpawnDirector(self.lanes)
 
+        self.weapons = create_weapons()
+        self.current_weapon_index = 0
+        self.gun.weapon = self.current_weapon
+
         self.boats: List[Boat] = []
         self.monsters: List[SeaMonster] = []
         self.effects: List[BloodEffect] = []
+        self.projectiles: List[Projectile] = []
 
         self.saved_boats = 0
         self.score = 0
-        self.ammo = START_AMMO
         self.enemies_killed = 0
         self.run_time = 0.0
         self.trigger_held = False
@@ -85,6 +88,21 @@ class Game:
         self.game_over = False
         self.victory = False
         self.result_recorded = False
+
+    @property
+    def current_weapon(self):
+        return self.weapons[self.current_weapon_index]
+
+    @property
+    def ammo(self):
+        return self.current_weapon.ammo
+
+    def switch_weapon(self, index: int) -> None:
+        if 0 <= index < len(self.weapons):
+            self.current_weapon_index = index
+            self.gun.weapon = self.current_weapon
+            self.trigger_held = False
+            self.auto_fire_timer = 0.0
 
     def load_scoreboard(self) -> list[dict[str, int | str]]:
         if not self.scoreboard_path.exists():
@@ -235,22 +253,41 @@ class Game:
     def shoot(self) -> bool:
         if self.game_over or self.victory:
             return False
-        if self.ammo <= 0:
+
+        weapon = self.current_weapon
+        if not weapon.can_shoot():
             return False
 
-        self.ammo -= 1
+        weapon.consume_ammo()
         self.gun.shoot()
 
-        for monster in self.monsters:
-            if monster.dead:
-                continue
-            if self.ray_hits_bear(monster):
-                x, y, _ = monster.get_draw_data()
-                self.effects.append(BloodEffect(x, y))
-                monster.hit()
-                if monster.dead:
-                    self.score += 100
-                    self.enemies_killed += 1
+        if weapon.projectile_speed > 0:
+            # RPG: spawn a projectile
+            mx, my = self.gun.muzzle_position()
+            self.projectiles.append(
+                Projectile(mx, my, self.gun.angle, weapon.projectile_speed,
+                           weapon.damage, weapon.explosion_radius)
+            )
+        else:
+            # Hitscan weapons (pistol, rifle, shotgun)
+            original_angle = self.gun.angle
+            for _ in range(weapon.pellets):
+                if weapon.spread > 0:
+                    self.gun.angle = original_angle + random.uniform(-weapon.spread, weapon.spread)
+
+                for monster in self.monsters:
+                    if monster.dead:
+                        continue
+                    if self.ray_hits_bear(monster):
+                        x, y, _ = monster.get_draw_data()
+                        self.effects.append(BloodEffect(x, y))
+                        monster.hit(weapon.damage)
+                        if monster.dead:
+                            self.score += 100
+                            self.enemies_killed += 1
+
+            self.gun.angle = original_angle
+
         return True
 
     def update_auto_fire(self, dt: float) -> None:
@@ -258,10 +295,11 @@ class Game:
         if not self.trigger_held:
             return
 
+        shot_cooldown = 1.0 / self.current_weapon.fire_rate
         while self.auto_fire_timer <= 0.0:
             if not self.shoot():
                 break
-            self.auto_fire_timer += SHOT_COOLDOWN
+            self.auto_fire_timer += shot_cooldown
 
     def update_spawns(self, dt: float) -> None:
         spawn_girl, spawn_bear = self.spawner.update(dt)
@@ -325,15 +363,60 @@ class Game:
             if boat.saved:
                 self.saved_boats += 1
                 self.score += 50
-                self.ammo += AMMO_REWARD
-                if self.ammo > 100:
-                    self.ammo = 100
+                for weapon in self.weapons:
+                    weapon.add_ammo(AMMO_REWARD)
                 continue
             if boat.captured:
                 continue
             remaining_boats.append(boat)
         self.boats = remaining_boats
 
+        # Update projectiles and check collisions
+        for proj in self.projectiles:
+            if proj.exploding:
+                continue
+            hit_something = False
+            # Check collision with monsters
+            for monster in self.monsters:
+                if monster.dead:
+                    continue
+                mx, my, size = monster.get_draw_data()
+                dist = math.hypot(proj.x - mx, proj.y - my)
+                if dist <= size * 0.5:
+                    hit_something = True
+                    break
+            # Check collision with boats
+            if not hit_something:
+                for boat in self.boats:
+                    if boat.saved or boat.captured:
+                        continue
+                    bx, by, bsize = boat.get_draw_data()
+                    dist = math.hypot(proj.x - bx, proj.y - by)
+                    if dist <= bsize * 0.6:
+                        hit_something = True
+                        break
+            # Check collision with land (only after projectile has crossed water)
+            on_land = self.tilemap.is_land_at_pixel(proj.x, proj.y)
+            if not on_land:
+                proj.crossed_water = True
+            if not hit_something and proj.crossed_water and on_land:
+                hit_something = True
+            if hit_something:
+                proj.explode()
+                # Area of effect damage to monsters
+                for monster in self.monsters:
+                    if monster.dead:
+                        continue
+                    mx, my, size = monster.get_draw_data()
+                    dist = math.hypot(proj.x - mx, proj.y - my)
+                    if dist <= proj.explosion_radius:
+                        self.effects.append(BloodEffect(mx, my))
+                        monster.hit(proj.damage)
+                        if monster.dead:
+                            self.score += 100
+                            self.enemies_killed += 1
+
+        self.projectiles = [p for p in self.projectiles if p.update(dt)]
         self.monsters = [m for m in self.monsters if (not m.remove) and m.progress <= 1.08]
         self.effects = [effect for effect in self.effects if effect.update(dt)]
 
@@ -373,11 +456,15 @@ class Game:
             for _, _, obj in self.get_sorted_drawables():
                 obj.draw(self.game_surface)
 
+            for proj in self.projectiles:
+                proj.draw(self.game_surface)
+
             for effect in self.effects:
                 effect.draw(self.game_surface)
 
             self.gun.draw(self.game_surface)
             draw_ui(self.game_surface, self)
+            draw_weapon_selector(self.game_surface, self)
             draw_overlay(self.game_surface, self)
             if self.screen_state == "pause":
                 draw_pause_menu(self.game_surface, self)
@@ -410,6 +497,8 @@ class Game:
                     self.start_game()
                 elif self.screen_state == "game" and event.key == pygame.K_r:
                     self.reset()
+                elif self.screen_state == "game" and event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4):
+                    self.switch_weapon(event.key - pygame.K_1)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.screen_state == "menu":
                     self.handle_menu_click()
@@ -423,6 +512,10 @@ class Game:
             elif self.screen_state == "game" and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 self.trigger_held = False
                 self.auto_fire_timer = 0.0
+            elif self.screen_state == "game" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+                self.switch_weapon((self.current_weapon_index - 1) % len(self.weapons))
+            elif self.screen_state == "game" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+                self.switch_weapon((self.current_weapon_index + 1) % len(self.weapons))
 
     def handle_menu_click(self) -> None:
         mouse_pos = self.get_virtual_mouse_pos()

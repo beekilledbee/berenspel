@@ -25,8 +25,8 @@ class Enemy:
             return
         self.progress += self.speed * dt
 
-    def hit(self) -> None:
-        self.hp -= 1
+    def hit(self, damage: int = 1) -> None:
+        self.hp -= damage
         if self.hp <= 0:
             self.dead = True
             self.death_timer = BEAR_FLASH_DURATION
