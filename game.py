@@ -82,6 +82,7 @@ class Game:
         self.effects: List[BloodEffect] = []
         self.projectiles: List[Projectile] = []
         self.saved_people = []
+        self.saved_people_points = self.tilemap.get_saved_people_points()
 
         self.saved_boats = 0
         self.score = 0
@@ -381,8 +382,8 @@ class Game:
                 for weapon in self.weapons:
                     weapon.add_ammo(AMMO_REWARD)
 
-                spawn_x, spawn_y = self.get_saved_people_spawn(boat.lane.index)
                 for _ in range(boat.passenger_count):
+                    spawn_x, spawn_y = self.get_saved_people_spawn()
                     self.saved_people.append(SavedPerson(spawn_x, spawn_y))
 
                 continue
@@ -448,15 +449,11 @@ class Game:
             self.sound_manager.play("victory")
             self.sound_manager.stop_bgm()
 
-    def get_saved_people_spawn(self, lane_index: int) -> tuple[float, float]:
-        positions = {
-            0: (300, 610),
-            1: (470, 610),
-            2: (640, 620),
-            3: (815, 610),
-            4: (990, 610),
-        }
-        return positions.get(lane_index, (640, 620))
+    def get_saved_people_spawn(self) -> tuple[float, float]:
+        if not self.saved_people_points:
+            return 640, 620
+
+        return random.choice(self.saved_people_points)
 
     def update(self, dt: float) -> None:
         if self.screen_state != "game":

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="20" height="12" tilewidth="64" tileheight="64" infinite="0" nextlayerid="13" nextobjectid="1">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="20" height="12" tilewidth="64" tileheight="64" infinite="0" nextlayerid="16" nextobjectid="165">
  <tileset firstgid="1" source="Water Background color.tsx"/>
  <tileset firstgid="2" source="Tilemap_color3.tsx"/>
  <tileset firstgid="56" source="Water Foam.tsx"/>
@@ -65,7 +65,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,17,17,17,17,17,0,17,0,0,0,0,0,0,0,0,0,
+0,0,0,0,17,17,17,17,0,0,17,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,17,17,17,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,17,17,17,8,8,0,0,0,0,0,0,0
 </data>
@@ -182,4 +182,123 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
+ <objectgroup id="15" name="saved people">
+  <object id="118" x="224.561" y="549.673">
+   <point/>
+  </object>
+  <object id="121" x="239.644" y="583.189">
+   <point/>
+  </object>
+  <object id="122" x="214.506" y="601.623">
+   <point/>
+  </object>
+  <object id="123" x="241.32" y="620.058">
+   <point/>
+  </object>
+  <object id="124" x="283.216" y="658.602">
+   <point/>
+  </object>
+  <object id="125" x="303.325" y="675.36">
+   <point/>
+  </object>
+  <object id="126" x="351.925" y="680.388">
+   <point/>
+  </object>
+  <object id="127" x="408.903" y="675.36">
+   <point/>
+  </object>
+  <object id="129" x="449.123" y="687.091">
+   <point/>
+  </object>
+  <object id="133" x="487.667" y="661.953">
+   <point/>
+  </object>
+  <object id="134" x="519.508" y="673.684">
+   <point/>
+  </object>
+  <object id="135" x="504.425" y="687.091">
+   <point/>
+  </object>
+  <object id="136" x="591.568" y="749.097">
+   <point/>
+  </object>
+  <object id="137" x="626.761" y="749.097">
+   <point/>
+  </object>
+  <object id="138" x="665.305" y="710.553">
+   <point/>
+  </object>
+  <object id="139" x="792.668" y="747.421">
+   <point/>
+  </object>
+  <object id="140" x="856.35" y="720.607">
+   <point/>
+  </object>
+  <object id="141" x="732.338" y="656.926">
+   <point/>
+  </object>
+  <object id="142" x="720.607" y="680.388">
+   <point/>
+  </object>
+  <object id="143" x="682.063" y="556.376">
+   <point/>
+  </object>
+  <object id="144" x="603.299" y="536.266">
+   <point/>
+  </object>
+  <object id="145" x="596.596" y="598.272">
+   <point/>
+  </object>
+  <object id="146" x="621.733" y="554.7">
+   <point/>
+  </object>
+  <object id="147" x="623.409" y="603.299">
+   <point/>
+  </object>
+  <object id="148" x="596.596" y="621.733">
+   <point/>
+  </object>
+  <object id="149" x="646.871" y="553.024">
+   <point/>
+  </object>
+  <object id="150" x="734.014" y="563.079">
+   <point/>
+  </object>
+  <object id="151" x="725.635" y="593.244">
+   <point/>
+  </object>
+  <object id="152" x="802.723" y="611.678">
+   <point/>
+  </object>
+  <object id="153" x="889.866" y="596.596">
+   <point/>
+  </object>
+  <object id="154" x="863.053" y="537.942">
+   <point/>
+  </object>
+  <object id="155" x="856.35" y="591.568">
+   <point/>
+  </object>
+  <object id="156" x="911.652" y="547.997">
+   <point/>
+  </object>
+  <object id="157" x="948.521" y="626.761">
+   <point/>
+  </object>
+  <object id="158" x="920.031" y="638.492">
+   <point/>
+  </object>
+  <object id="159" x="928.411" y="683.739">
+   <point/>
+  </object>
+  <object id="160" x="988.741" y="672.008">
+   <point/>
+  </object>
+  <object id="161" x="988.741" y="598.272">
+   <point/>
+  </object>
+  <object id="164" x="963.603" y="556.376">
+   <point/>
+  </object>
+ </objectgroup>
 </map>

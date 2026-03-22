@@ -46,6 +46,16 @@ class TileMap:
 
         frame_index = (global_frame + phase_offset) % self.foam_frame_count
         return self.foam_frames[frame_index]
+
+    def get_saved_people_points(self) -> list[tuple[float, float]]:
+        points = []
+
+        for layer in self.tmx_data.visible_layers:
+            if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "savd peolpe":
+                for obj in layer:
+                    points.append((obj.x, obj.y))
+
+        return points
     
     def is_land_at_pixel(self, px: float, py: float) -> bool:
         tile_x = int(px // self.tile_width)
