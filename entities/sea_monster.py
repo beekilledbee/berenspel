@@ -29,31 +29,6 @@ class SeaMonster(Enemy):
         scale = 0.34 + self.progress * 1.12
         size = max(14, int(28 * scale))
         return x, y, size
-    
-    def is_land_at_pixel(self, px: float, py: float) -> bool:
-        tile_x = int(px // self.tile_width)
-        tile_y = int(py // self.tile_height)
-
-        if not (0 <= tile_x < self.tmx_data.width and 0 <= tile_y < self.tmx_data.height):
-            return False
-
-        land_layers = {
-            "flat ground",
-            "flatground 2",
-            "flat ground 3",
-            "elevated ground",
-            "elevated ground 2",
-            "elevated ground 3",
-            "elevated ground yellow",
-        }
-
-        for layer in self.tmx_data.visible_layers:
-            if isinstance(layer, pytmx.TiledTileLayer) and layer.name in land_layers:
-                gid = layer.data[tile_y][tile_x]
-                if gid != 0:
-                    return True
-
-        return False
 
     def draw(self, screen: pygame.Surface) -> None:
         if not self.should_flash_draw():

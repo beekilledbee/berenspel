@@ -67,12 +67,12 @@ class Game:
         self.victory = False
 
     def create_lanes(self) -> List[Lane]:
-        horizon_offsets = [-360, -180, 0, 180, 360]
-        end_offsets = [-500, -250, 0, 250, 500]
-
         return [
-            Lane(i, SCREEN_WIDTH // 2 + h_off, SCREEN_WIDTH // 2 + e_off)
-            for i, (h_off, e_off) in enumerate(zip(horizon_offsets, end_offsets))
+            Lane(0, 330, 80, 300, 610),
+            Lane(1, 470, 80, 470, 610),
+            Lane(2, 640, 80, 640, 610),
+            Lane(3, 810, 80, 815, 610),
+            Lane(4, 980, 80, 990, 610),
         ]
 
     def spawn_boat(self) -> None:
