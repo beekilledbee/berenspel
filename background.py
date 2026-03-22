@@ -22,8 +22,8 @@ def draw_background(surface: pygame.Surface, lanes) -> None:
         pygame.draw.line(
             surface,
             LANE_COLOR,
-            (int(lane.horizon_x), HORIZON_Y),
-            (int(lane.end_x), PLAYER_Y),
+            (int(lane.start_x), int(lane.start_y)),
+            (int(lane.end_x), int(lane.end_y)),
             2,
         )
 

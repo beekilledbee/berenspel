@@ -1,13 +1,26 @@
 import math
 import random
 import sys
+import json
+from pathlib import Path
 from typing import List
 
 import pygame
 
 from effects import BloodEffect
 from entities import SeaMonster, Boat, Lane, PlayerGun
-from ui import draw_overlay, draw_ui
+from ui import (
+    draw_cursor,
+    draw_main_menu,
+    draw_overlay,
+    draw_pause_menu,
+    draw_scoreboard,
+    draw_ui,
+    format_elapsed_time,
+    get_main_menu_buttons,
+    get_pause_menu_buttons,
+    get_scoreboard_back_button,
+)
 from spawning import SpawnDirector
 from background import draw_background
 from tilemap import TileMap
@@ -38,13 +51,16 @@ class Game:
         self.game_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.tilemap = TileMap("assets/map.tmx")
         pygame.display.set_caption(TITLE)
-
+        pygame.mouse.set_visible(True)
 
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("arial", 28)
         self.small_font = pygame.font.SysFont("arial", 22)
         self.big_font = pygame.font.SysFont("arial", 56, bold=True)
         self.running = True
+        self.screen_state = "menu"
+        self.scoreboard_path = Path(__file__).resolve().parent / "scoreboard.json"
+        self.scoreboard_entries = self.load_scoreboard()
 
         self.reset()
 
@@ -60,11 +76,99 @@ class Game:
         self.saved_boats = 0
         self.score = 0
         self.ammo = START_AMMO
+        self.enemies_killed = 0
+        self.run_time = 0.0
         self.trigger_held = False
         self.auto_fire_timer = 0.0
 
         self.game_over = False
         self.victory = False
+        self.result_recorded = False
+
+    def load_scoreboard(self) -> list[dict[str, int | str]]:
+        if not self.scoreboard_path.exists():
+            return []
+
+        try:
+            with self.scoreboard_path.open("r", encoding="utf-8") as scoreboard_file:
+                data = json.load(scoreboard_file)
+        except (OSError, json.JSONDecodeError):
+            return []
+
+        if not isinstance(data, list):
+            return []
+
+        entries: list[dict[str, int | str]] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            time_to_finish = item.get("time_to_finish")
+            enemies_killed = item.get("enemies_killed")
+            if isinstance(time_to_finish, str) and isinstance(enemies_killed, int):
+                entries.append(
+                    {
+                        "time_to_finish": time_to_finish,
+                        "enemies_killed": enemies_killed,
+                    }
+                )
+        return entries
+
+    def save_scoreboard(self) -> None:
+        with self.scoreboard_path.open("w", encoding="utf-8") as scoreboard_file:
+            json.dump(self.scoreboard_entries[:20], scoreboard_file, indent=2)
+
+    def record_result(self) -> None:
+        if self.result_recorded:
+            return
+
+        self.scoreboard_entries.insert(
+            0,
+            {
+                "time_to_finish": format_elapsed_time(self.run_time),
+                "enemies_killed": self.enemies_killed,
+            },
+        )
+        self.save_scoreboard()
+        self.result_recorded = True
+
+    def start_game(self) -> None:
+        self.reset()
+        self.screen_state = "game"
+        pygame.mouse.set_visible(False)
+
+    def pause_game(self) -> None:
+        self.trigger_held = False
+        self.auto_fire_timer = 0.0
+        self.screen_state = "pause"
+        pygame.mouse.set_visible(True)
+
+    def resume_game(self) -> None:
+        self.trigger_held = False
+        self.auto_fire_timer = 0.0
+        self.screen_state = "game"
+        pygame.mouse.set_visible(False)
+
+    def show_main_menu(self) -> None:
+        self.trigger_held = False
+        self.auto_fire_timer = 0.0
+        self.screen_state = "menu"
+        pygame.mouse.set_visible(True)
+
+    def show_scoreboard(self) -> None:
+        self.trigger_held = False
+        self.auto_fire_timer = 0.0
+        self.screen_state = "scoreboard"
+        pygame.mouse.set_visible(True)
+
+    def quit_game(self) -> None:
+        self.running = False
+
+    def get_virtual_mouse_pos(self) -> tuple[float, float]:
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        return (
+            mouse_x * SCREEN_WIDTH / self.monitor_width,
+            mouse_y * SCREEN_HEIGHT / self.monitor_height,
+        )
 
     def create_lanes(self) -> List[Lane]:
         return [
@@ -134,6 +238,7 @@ class Game:
                 monster.hit()
                 if monster.dead:
                     self.score += 100
+                    self.enemies_killed += 1
         return True
 
     def update_auto_fire(self, dt: float) -> None:
@@ -208,6 +313,8 @@ class Game:
                 self.saved_boats += 1
                 self.score += 50
                 self.ammo += AMMO_REWARD
+                if self.ammo > 100:
+                    self.ammo = 100
                 continue
             if boat.captured:
                 continue
@@ -219,16 +326,18 @@ class Game:
 
         if self.saved_boats >= GOAL_SAVED_GIRLS:
             self.victory = True
+            self.record_result()
 
     def update(self, dt: float) -> None:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if self.screen_state != "game":
+            return
 
-        virtual_mouse_x = mouse_x * SCREEN_WIDTH / self.monitor_width
-        virtual_mouse_y = mouse_y * SCREEN_HEIGHT / self.monitor_height
+        virtual_mouse_x, virtual_mouse_y = self.get_virtual_mouse_pos()
 
         self.gun.update((virtual_mouse_x, virtual_mouse_y), dt)
         if self.game_over or self.victory:
             return
+        self.run_time += dt
         self.update_auto_fire(dt)
         self.update_spawns(dt)
         self.update_entities(dt)
@@ -243,15 +352,25 @@ class Game:
         self.game_surface.fill((0, 0, 0))
         self.tilemap.draw(self.game_surface)
 
-        for _, _, obj in self.get_sorted_drawables():
-            obj.draw(self.game_surface)
+        if self.screen_state == "menu":
+            draw_main_menu(self.game_surface, self)
+        elif self.screen_state == "scoreboard":
+            draw_scoreboard(self.game_surface, self)
+        else:
+            for _, _, obj in self.get_sorted_drawables():
+                obj.draw(self.game_surface)
 
-        for effect in self.effects:
-            effect.draw(self.game_surface)
+            for effect in self.effects:
+                effect.draw(self.game_surface)
 
-        self.gun.draw(self.game_surface)
-        draw_ui(self.game_surface, self)
-        draw_overlay(self.game_surface, self)
+            self.gun.draw(self.game_surface)
+            draw_ui(self.game_surface, self)
+            draw_overlay(self.game_surface, self)
+            if self.screen_state == "pause":
+                draw_pause_menu(self.game_surface, self)
+
+        if self.screen_state == "game":
+            draw_cursor(self.game_surface, self)
 
         scaled_surface = pygame.transform.smoothscale(
             self.game_surface,
@@ -266,15 +385,59 @@ class Game:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.running = False
-                elif event.key == pygame.K_r:
+                    if self.screen_state == "menu":
+                        self.quit_game()
+                    elif self.screen_state == "pause":
+                        self.resume_game()
+                    elif self.screen_state == "game" and not (self.game_over or self.victory):
+                        self.pause_game()
+                    else:
+                        self.show_main_menu()
+                elif self.screen_state == "menu" and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    self.start_game()
+                elif self.screen_state == "game" and event.key == pygame.K_r:
                     self.reset()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                self.trigger_held = True
-                self.auto_fire_timer = 0.0
-            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if self.screen_state == "menu":
+                    self.handle_menu_click()
+                elif self.screen_state == "scoreboard":
+                    self.handle_scoreboard_click()
+                elif self.screen_state == "pause":
+                    self.handle_pause_menu_click()
+                else:
+                    self.trigger_held = True
+                    self.auto_fire_timer = 0.0
+            elif self.screen_state == "game" and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 self.trigger_held = False
                 self.auto_fire_timer = 0.0
+
+    def handle_menu_click(self) -> None:
+        mouse_pos = self.get_virtual_mouse_pos()
+        for button_name, rect in get_main_menu_buttons().items():
+            if not rect.collidepoint(mouse_pos):
+                continue
+            if button_name == "start":
+                self.start_game()
+            elif button_name == "scoreboard":
+                self.show_scoreboard()
+            elif button_name == "quit":
+                self.quit_game()
+            return
+
+    def handle_scoreboard_click(self) -> None:
+        if get_scoreboard_back_button().collidepoint(self.get_virtual_mouse_pos()):
+            self.show_main_menu()
+
+    def handle_pause_menu_click(self) -> None:
+        mouse_pos = self.get_virtual_mouse_pos()
+        for button_name, rect in get_pause_menu_buttons().items():
+            if not rect.collidepoint(mouse_pos):
+                continue
+            if button_name == "continue":
+                self.resume_game()
+            elif button_name == "main_menu":
+                self.show_main_menu()
+            return
 
     def run(self) -> None:
         while self.running:
