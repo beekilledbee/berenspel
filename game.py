@@ -10,6 +10,7 @@ import pygame
 
 from effects import BloodEffect
 from entities import SeaMonster, Boat, Lane, PlayerGun, Projectile, create_weapons
+from entities.saved_person import SavedPerson
 from sound import SoundManager
 from ui import (
     draw_cursor,
@@ -80,6 +81,7 @@ class Game:
         self.monsters: List[SeaMonster] = []
         self.effects: List[BloodEffect] = []
         self.projectiles: List[Projectile] = []
+        self.saved_people = []
 
         self.saved_boats = 0
         self.score = 0
@@ -91,6 +93,7 @@ class Game:
         self.game_over = False
         self.victory = False
         self.result_recorded = False
+        
 
     @property
     def current_weapon(self):
@@ -377,6 +380,11 @@ class Game:
                 self.sound_manager.play("boat_saved")
                 for weapon in self.weapons:
                     weapon.add_ammo(AMMO_REWARD)
+
+                spawn_x, spawn_y = self.get_saved_people_spawn(boat.lane.index)
+                for _ in range(boat.passenger_count):
+                    self.saved_people.append(SavedPerson(spawn_x, spawn_y))
+
                 continue
             if boat.captured:
                 self.sound_manager.play("boat_sunk")
@@ -440,6 +448,16 @@ class Game:
             self.sound_manager.play("victory")
             self.sound_manager.stop_bgm()
 
+    def get_saved_people_spawn(self, lane_index: int) -> tuple[float, float]:
+        positions = {
+            0: (300, 610),
+            1: (470, 610),
+            2: (640, 620),
+            3: (815, 610),
+            4: (990, 610),
+        }
+        return positions.get(lane_index, (640, 620))
+
     def update(self, dt: float) -> None:
         if self.screen_state != "game":
             return
@@ -463,6 +481,12 @@ class Game:
     def draw(self) -> None:
         self.game_surface.fill((0, 0, 0))
         self.tilemap.draw(self.game_surface)
+
+        for person in self.saved_people:
+            person.draw(self.game_surface)
+
+        for _, _, obj in self.get_sorted_drawables():
+            obj.draw(self.game_surface)
 
         if self.screen_state == "menu":
             draw_main_menu(self.game_surface, self)
