@@ -68,11 +68,11 @@ class Game:
 
     def create_lanes(self) -> List[Lane]:
         return [
-            Lane(0, 330, 80, 300, 610),
-            Lane(1, 470, 80, 470, 610),
-            Lane(2, 640, 80, 640, 610),
-            Lane(3, 810, 80, 815, 610),
-            Lane(4, 980, 80, 990, 610),
+            Lane(0, 320, 0, 300, 610),
+            Lane(1, 470, 0, 470, 610),
+            Lane(2, 640, 0, 640, 610),
+            Lane(3, 810, 0, 815, 610),
+            Lane(4, 980, 0, 990, 610),
         ]
 
     def spawn_boat(self) -> None:
